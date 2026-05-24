@@ -490,7 +490,12 @@ function startAuditionFlow(scriptId) {
     document.getElementById('status-dot').className = 'status-dot connected';
     document.getElementById('status-text').textContent = 'Reader connected!';
     document.getElementById('btn-enter-audition').classList.remove('hidden');
-    conn.on('open', () => conn.send({ type: 'script', data: script }));
+    conn.on('open', () => conn.send({
+      type: 'script',
+      data: script,
+      meLabel: state.settings.meLabel,
+      themLabel: state.settings.themLabel,
+    }));
     conn.on('data', msg => handleAuditionCommand(msg));
     conn.on('close', () => toast('Reader disconnected'));
   });
@@ -514,10 +519,21 @@ function showMeText(text) {
   const textEl = document.getElementById('audition-text');
   const blank = document.getElementById('audition-blank');
   textEl.textContent = text;
+  textEl.style.transform = 'translateY(0)';
   blank.style.opacity = '0';
   container.classList.remove('hidden');
-  textEl.style.transform = 'translateY(0)';
-  setTimeout(() => startScrolling(textEl), 500);
+
+  requestAnimationFrame(() => {
+    const containerH = container.clientHeight;
+    const textH = textEl.offsetHeight;
+    if (textH > containerH) {
+      // Text overflows — position top of text at top of container, then scroll to bottom
+      const startY = (textH - containerH) / 2;
+      textEl.style.transform = `translateY(${startY}px)`;
+      setTimeout(() => startScrolling(textEl, startY), 500);
+    }
+    // else: text fits — leave centered, no scroll
+  });
 }
 
 function clearAudition() {
@@ -526,17 +542,16 @@ function clearAudition() {
   document.getElementById('audition-text-container').classList.add('hidden');
 }
 
-function startScrolling(textEl) {
+function startScrolling(textEl, startY) {
   stopScrolling();
   const rate = state.settings.scrollRate;
   let startTime = null;
-  const maxScroll = textEl.offsetHeight + window.innerHeight;
   function step(ts) {
     if (!startTime) startTime = ts;
     const elapsed = (ts - startTime) / 1000;
-    const y = -elapsed * rate;
+    const y = startY - elapsed * rate;
     textEl.style.transform = `translateY(${y}px)`;
-    if (-y < maxScroll) state.scrollRaf = requestAnimationFrame(step);
+    if (y > -startY) state.scrollRaf = requestAnimationFrame(step);
   }
   state.scrollRaf = requestAnimationFrame(step);
 }
@@ -621,7 +636,13 @@ function handleIncomingPeer(peerId) {
       document.getElementById('reader-status').className = 'reader-status connected';
       document.getElementById('reader-status').textContent = '●';
     });
-    conn.on('data', msg => { if (msg.type === 'script') startReaderMode(msg.data, conn); });
+    conn.on('data', msg => {
+      if (msg.type === 'script') {
+        if (msg.meLabel) state.settings.meLabel = msg.meLabel;
+        if (msg.themLabel) state.settings.themLabel = msg.themLabel;
+        startReaderMode(msg.data, conn);
+      }
+    });
     conn.on('close', () => {
       toast('Disconnected');
       document.getElementById('reader-status').className = 'reader-status disconnected';
@@ -770,6 +791,7 @@ function bindEvents() {
   });
   document.getElementById('btn-footer-me').addEventListener('click', () => {
     if (!state.currentScriptId) return;
+    if (state.conn && state.conn.open) { enterAuditionMode(); return; }
     startAuditionFlow(state.currentScriptId);
   });
   document.getElementById('btn-footer-them').addEventListener('click', () => {
