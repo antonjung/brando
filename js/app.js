@@ -6,6 +6,9 @@ const BASE_URL = (() => {
   return u.endsWith('index.html') ? u.slice(0, -10) : u + '/';
 })();
 
+// ── Version ──────────────────────────────────────────────────────────────────
+const APP_VERSION = window.APP_VERSION || '—';
+
 // ── State ────────────────────────────────────────────────────────────────────
 const state = {
   scripts: [],
@@ -26,6 +29,7 @@ const state = {
   scrollRaf: null,
   scrollStartY: null,
   scrollStartTime: null,
+  swReg: null,           // ServiceWorkerRegistration
 };
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -178,12 +182,14 @@ function renderHome() {
   const empty = document.getElementById('empty-state');
 
   if (state.scripts.length === 0) {
+    list.classList.add('hidden');
     list.innerHTML = '';
     empty.classList.remove('hidden');
     return;
   }
 
   empty.classList.add('hidden');
+  list.classList.remove('hidden');
   list.innerHTML = state.scripts.map(s => scriptCard(s)).join('');
 
   list.querySelectorAll('.script-action-btn[data-action]').forEach(btn => {
@@ -913,12 +919,85 @@ function bindEvents() {
   });
 
   document.getElementById('btn-add-note').addEventListener('click', () => openNoteModal(null));
+
+  // Update / Reload
+  document.getElementById('btn-apply-update').addEventListener('click', applyUpdate);
+  document.getElementById('menu-reload').addEventListener('click', () => window.location.reload());
+  document.getElementById('menu-check-update').addEventListener('click', checkForUpdates);
 }
 
-// ── Service Worker ────────────────────────────────────────────────────────────
-function registerSW() {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW:', err));
+// ── Service Worker & Updates ──────────────────────────────────────────────────
+async function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+
+  try {
+    const reg = await navigator.serviceWorker.register('./sw.js');
+    state.swReg = reg;
+
+    // Already a waiting SW on load (e.g. tab was open during an earlier update)
+    if (reg.waiting) showUpdateBanner();
+
+    // New SW found while page is open
+    reg.addEventListener('updatefound', () => {
+      const newSW = reg.installing;
+      newSW.addEventListener('statechange', () => {
+        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+          showUpdateBanner();
+        }
+      });
+    });
+  } catch (err) {
+    console.warn('SW registration failed:', err);
+  }
+
+  // When the new SW takes control, reload to use fresh cache
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
+}
+
+function showUpdateBanner() {
+  document.getElementById('update-banner').classList.remove('hidden');
+}
+
+function applyUpdate() {
+  const reg = state.swReg;
+  if (reg && reg.waiting) {
+    reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+  } else {
+    window.location.reload();
+  }
+}
+
+async function checkForUpdates() {
+  const reg = state.swReg;
+  closeAllPanels();
+
+  if (!reg) {
+    window.location.reload();
+    return;
+  }
+
+  // If there's already a waiting SW, just surface the banner
+  if (reg.waiting) {
+    showUpdateBanner();
+    toast('Update ready — tap the banner to install');
+    return;
+  }
+
+  toast('Checking for updates…');
+  try {
+    await reg.update();
+    // Give the browser a moment to install the new SW if found
+    setTimeout(() => {
+      if (reg.waiting) {
+        showUpdateBanner();
+      } else {
+        toast('Already on the latest version ✓');
+      }
+    }, 1500);
+  } catch {
+    toast('Could not check for updates');
   }
 }
 
@@ -931,6 +1010,13 @@ function init() {
   bindEvents();
   initSettingsListeners();
   registerSW();
+
+  // Display version
+  const vText = `v${APP_VERSION}`;
+  const vEl = document.getElementById('app-version');
+  if (vEl) vEl.textContent = vText;
+  const mVer = document.getElementById('menu-version');
+  if (mVer) mVer.textContent = `Brando ${vText}`;
 
   // Check for incoming peer connection from QR scan
   const params = new URLSearchParams(window.location.search);

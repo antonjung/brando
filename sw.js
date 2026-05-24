@@ -1,11 +1,15 @@
-const CACHE = 'brando-v1';
+const VERSION = '1.0.1';
+const CACHE = `brando-v${VERSION}`;
 const ASSETS = [
   '.',
   'index.html',
+  'version.js',
   'css/styles.css',
   'js/app.js',
   'manifest.json',
   'icons/icon.svg',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
 ];
 
 self.addEventListener('install', e => {
@@ -16,14 +20,15 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  // Cache CDN resources
   if (e.request.url.includes('cdnjs') || e.request.url.includes('unpkg')) {
     e.respondWith(
       caches.open(CACHE).then(async c => {
@@ -39,4 +44,9 @@ self.addEventListener('fetch', e => {
   e.respondWith(
     caches.match(e.request).then(r => r || fetch(e.request))
   );
+});
+
+// Triggered by app to skip the waiting phase and activate immediately
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });

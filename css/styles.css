@@ -1,6 +1,10 @@
 /* ── Reset & Base ─────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Generic hide — views override this with their own transition rules */
+.hidden { display: none !important; }
+.view.hidden { display: flex !important; opacity: 0; pointer-events: none; transform: translateX(30px); }
+
 :root {
   --bg: #0d0d1a;
   --surface: #1a1a2e;
@@ -957,3 +961,65 @@ html, body {
 .confirm-actions button { flex: 1; padding: 12px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; cursor: pointer; border: none; }
 .confirm-cancel { background: var(--surface2); color: var(--text); }
 .confirm-ok { background: var(--danger); color: white; }
+
+/* ── App Footer (version) ─────────────────── */
+.app-footer {
+  padding: 8px 16px 12px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.45;
+  flex-shrink: 0;
+}
+
+/* ── Update Banner ────────────────────────── */
+.update-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--accent);
+  color: #000;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 400;
+  font-size: 14px;
+  font-weight: 600;
+  animation: slide-up 0.3s;
+}
+
+.update-banner button {
+  padding: 8px 16px;
+  background: #000;
+  color: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ── Menu Divider & Version ───────────────── */
+.menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 16px;
+}
+
+.menu-version {
+  padding: 12px 20px;
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.5;
+  margin-top: auto;
+}
+
+/* ── Overlay must override .hidden for its own fade ─ */
+.overlay.hidden {
+  display: block !important;
+  opacity: 0;
+  pointer-events: none;
+}

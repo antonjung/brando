@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Brando</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <meta name="theme-color" content="#0d0d1a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -22,11 +22,14 @@
       <h1>Brando</h1>
       <button class="icon-btn" id="btn-settings" title="Settings">&#9881;</button>
     </header>
-    <div id="script-list" class="script-list"></div>
+    <div id="script-list" class="script-list hidden"></div>
     <div id="empty-state" class="empty-state hidden">
       <div class="empty-icon">&#127917;</div>
       <p>No scripts yet.<br>Import a PDF to get started.</p>
       <button class="btn-primary" id="btn-import-empty">Import PDF</button>
+    </div>
+    <div class="app-footer">
+      <span id="app-version"></span>
     </div>
   </div>
 
@@ -119,6 +122,12 @@
 
 </div><!-- #app -->
 
+<!-- ── Update Banner ──────────────────────── -->
+<div id="update-banner" class="update-banner hidden">
+  <span>&#10024; New version available</span>
+  <button id="btn-apply-update">Update Now</button>
+</div>
+
 <!-- ── Overlay ─────────────────────────────── -->
 <div id="overlay" class="overlay hidden"></div>
 
@@ -131,7 +140,11 @@
   <ul class="menu-list">
     <li><button id="menu-import">&#128196; Import PDF</button></li>
     <li><button id="menu-notes">&#128221; Notes</button></li>
+    <li class="menu-divider"></li>
+    <li><button id="menu-check-update">&#8635; Check for Update</button></li>
+    <li><button id="menu-reload">&#128260; Reload App</button></li>
   </ul>
+  <div class="menu-version" id="menu-version"></div>
 </nav>
 
 <!-- ── Settings Panel ─────────────────────── -->
@@ -172,12 +185,11 @@
 
 <!-- CDN libs -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
-        integrity="sha512-q+4lVJFaTHMT7MwOSzAMVGikAYMbFY7VgIlJjJrblF7P4LnGFTl7nQ3S9u2DjG4rlVS3yKZ3v2/aMVjl4VXA=="
         crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
-        integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSr9FzhIdYRnS0ZgRjdmdaRjezsnYFBkuxJEA=="
         crossorigin="anonymous"></script>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script src="version.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
