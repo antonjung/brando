@@ -14,10 +14,15 @@ function icon(name, size = 16) {
   return feather.toSvg(name, { width: size, height: size, 'stroke-width': 2 });
 }
 
-// ── Editor zoom ───────────────────────────────────────────────────────────────
+// ── Editor zoom & display compositing ────────────────────────────────────────
 let editorZoom = 1.0;
 let _pdfNaturalWidth = 0;
 let _pdfNaturalHeight = 0;
+let _pageCanvases = [];       // off-screen canvas per PDF page
+let _pageCssHeights = [];     // CSS px height per page
+let _displaySectionOffsets = []; // display-space CSS top of each section (null if DELETED)
+let _displayTotalHeight = 0;  // total CSS height of visible sections
+let _dpR = 1;                 // device pixel ratio used when rendering
 
 // ── State ────────────────────────────────────────────────────────────────────
 const state = {
@@ -381,10 +386,14 @@ async function renderEditor(scriptId) {
 
   document.getElementById('editor-title').textContent = script.name;
 
-  // Reset zoom
+  // Reset zoom & display state
   editorZoom = 1.0;
   _pdfNaturalWidth = 0;
   _pdfNaturalHeight = 0;
+  _pageCanvases = [];
+  _pageCssHeights = [];
+  _displaySectionOffsets = [];
+  _displayTotalHeight = 0;
   document.getElementById('zoom-slider').value = 100;
   document.getElementById('zoom-val').textContent = '100%';
 
@@ -415,7 +424,7 @@ async function renderEditor(scriptId) {
   // Wait one frame so pdf-pages has a measured width
   await new Promise(r => requestAnimationFrame(r));
   const containerWidth = pdfPages.clientWidth || window.innerWidth;
-  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  _dpR = Math.min(window.devicePixelRatio || 1, 2);
 
   // Scale is based on the first page width → all pages use same scale
   const firstPage = await pdf.getPage(1);
@@ -440,23 +449,23 @@ async function renderEditor(scriptId) {
     const cssH = viewport.height;
 
     const canvas = document.createElement('canvas');
-    canvas.width = Math.round(cssW * DPR);
-    canvas.height = Math.round(cssH * DPR);
+    canvas.width = Math.round(cssW * _dpR);
+    canvas.height = Math.round(cssH * _dpR);
     canvas.style.width = cssW + 'px';
     canvas.style.height = cssH + 'px';
     canvas.style.display = 'block';
-    canvasLayer.appendChild(canvas);
-
+    // Render off-screen — rebuildDisplay composites into canvasLayer
     const ctx = canvas.getContext('2d');
-    ctx.scale(DPR, DPR);
+    ctx.scale(_dpR, _dpR);
     await page.render({ canvasContext: ctx, viewport }).promise;
 
+    _pageCanvases.push(canvas);
+    _pageCssHeights.push(cssH);
     script.pageHeights.push(cssH);
     script.totalHeight += cssH;
   }
 
   _pdfNaturalWidth = containerWidth;
-  _pdfNaturalHeight = script.totalHeight;
   pdfPages.style.width = containerWidth + 'px';
   saveScripts();
 
@@ -468,12 +477,102 @@ async function renderEditor(scriptId) {
 
   pdfLoading.classList.add('hidden');
 
-  // Auto-insert a split near the very top on first open
   if (script.splits.length === 0 && script.totalHeight > 0) {
-    addSplit(scriptId, Math.min(80, script.totalHeight * 0.04));
+    addSplit(scriptId, Math.min(80, script.totalHeight * 0.04)); // calls rebuildDisplay internally
+  } else {
+    rebuildDisplay(scriptId);
+  }
+}
+
+// Composite visible (non-DELETED) sections into canvasLayer from off-screen page canvases.
+// Updates _displaySectionOffsets and _displayTotalHeight, then calls renderOverlay.
+function rebuildDisplay(scriptId) {
+  const script = state.scripts.find(s => s.id === scriptId);
+  const canvasLayer = document.getElementById('pdf-canvas-layer');
+  if (!canvasLayer || !script || !script.totalHeight || !_pageCanvases.length) return;
+
+  canvasLayer.innerHTML = '';
+  _displaySectionOffsets = new Array(script.roles.length).fill(null);
+  _displayTotalHeight = 0;
+
+  const sorted = [...script.splits].sort((a, b) => a - b);
+  const boundaryFracs = [0, ...sorted, 1];
+
+  // Top offset in CSS px for each page
+  const pageOffsets = [];
+  let cumH = 0;
+  for (const h of _pageCssHeights) { pageOffsets.push(cumH); cumH += h; }
+
+  const canvasW = _pageCanvases[0].width; // device px (same for all pages)
+  const cssW = canvasW / _dpR;
+
+  for (let i = 0; i < boundaryFracs.length - 1; i++) {
+    const role = script.roles[i] || 'THEM';
+    if (role === 'DELETED') continue;
+
+    const topPx    = boundaryFracs[i]     * script.totalHeight;
+    const bottomPx = boundaryFracs[i + 1] * script.totalHeight;
+    const sectionH = bottomPx - topPx;
+    if (sectionH <= 0) continue;
+
+    _displaySectionOffsets[i] = _displayTotalHeight;
+    _displayTotalHeight += sectionH;
+
+    // Composite section pixels from source page canvases
+    const canvas = document.createElement('canvas');
+    canvas.width  = canvasW;
+    canvas.height = Math.round(sectionH * _dpR);
+    canvas.style.width  = cssW + 'px';
+    canvas.style.height = sectionH + 'px';
+    canvas.style.display = 'block';
+
+    const ctx = canvas.getContext('2d');
+    for (let pn = 0; pn < _pageCanvases.length; pn++) {
+      const pageTop    = pageOffsets[pn];
+      const pageBottom = pageTop + _pageCssHeights[pn];
+      if (pageBottom <= topPx || pageTop >= bottomPx) continue;
+
+      const overlapTop    = Math.max(topPx, pageTop);
+      const overlapBottom = Math.min(bottomPx, pageBottom);
+      const srcY = Math.round((overlapTop - pageTop)  * _dpR);
+      const srcH = Math.round((overlapBottom - overlapTop) * _dpR);
+      const dstY = Math.round((overlapTop - topPx) * _dpR);
+      ctx.drawImage(_pageCanvases[pn], 0, srcY, canvasW, srcH, 0, dstY, canvasW, srcH);
+    }
+    canvasLayer.appendChild(canvas);
+  }
+
+  _pdfNaturalHeight = _displayTotalHeight;
+
+  // Keep canvas layer zoom in sync
+  if (_pdfNaturalWidth) {
+    canvasLayer.style.transform   = editorZoom !== 1 ? `scale(${editorZoom})` : '';
+    canvasLayer.style.marginRight  = `${Math.max(0, _pdfNaturalWidth  * (editorZoom - 1))}px`;
+    canvasLayer.style.marginBottom = `${Math.max(0, _pdfNaturalHeight * (editorZoom - 1))}px`;
+    const pp = document.getElementById('pdf-pages');
+    if (pp) pp.style.width = (_pdfNaturalWidth * Math.max(1, editorZoom)) + 'px';
   }
 
   renderOverlay(scriptId);
+}
+
+// Map a Y position in display space (cut sections removed) back to PDF space.
+function displayYToPdfY(displayY, scriptId) {
+  const script = state.scripts.find(s => s.id === scriptId);
+  if (!script || !script.totalHeight || !_displaySectionOffsets.length) return displayY;
+
+  const sorted = [...script.splits].sort((a, b) => a - b);
+  const boundaryFracs = [0, ...sorted, 1];
+
+  for (let i = 0; i < boundaryFracs.length - 1; i++) {
+    const dispTop = _displaySectionOffsets[i];
+    if (dispTop === null) continue;
+    const sectionH = (boundaryFracs[i + 1] - boundaryFracs[i]) * script.totalHeight;
+    if (displayY >= dispTop && displayY < dispTop + sectionH) {
+      return boundaryFracs[i] * script.totalHeight + (displayY - dispTop);
+    }
+  }
+  return script.totalHeight;
 }
 
 function renderOverlay(scriptId) {
@@ -482,12 +581,12 @@ function renderOverlay(scriptId) {
   if (!overlay || !script || !script.totalHeight) return;
 
   overlay.innerHTML = '';
-  overlay.style.height = (script.totalHeight * editorZoom) + 'px';
+  overlay.style.height = (_displayTotalHeight * editorZoom) + 'px';
 
   const sorted = [...script.splits].sort((a, b) => a - b);
   const boundaryFracs = [0, ...sorted, 1];
 
-  // Fractions whose split line touches a cut section — these lines are hidden
+  // Lines adjacent to a DELETED section are not shown
   const hiddenFracs = new Set();
   sorted.forEach((frac, idx) => {
     if ((script.roles[idx] || 'THEM') === 'DELETED' ||
@@ -496,21 +595,18 @@ function renderOverlay(scriptId) {
     }
   });
 
-  // ── Section regions ─────────────────────────────────────────────────────
+  // ── Section tint regions ─────────────────────────────────────────────────
   boundaryFracs.forEach((topFrac, i) => {
     if (i >= boundaryFracs.length - 1) return;
     const role = script.roles[i] || 'THEM';
-    const topPx = topFrac * script.totalHeight * editorZoom;
-    const heightPx = (boundaryFracs[i + 1] - topFrac) * script.totalHeight * editorZoom;
-
+    if (role === 'DELETED') return; // no display space for cut sections
+    const displayTop = _displaySectionOffsets[i];
+    if (displayTop === null) return;
+    const sectionH = (boundaryFracs[i + 1] - topFrac) * script.totalHeight;
     const region = document.createElement('div');
-    if (role === 'DELETED') {
-      region.className = 'pdf-section-cut';
-    } else {
-      region.className = `pdf-section ${role === 'ME' ? 'me' : 'them'}`;
-    }
-    region.style.top = topPx + 'px';
-    region.style.height = heightPx + 'px';
+    region.className = `pdf-section ${role === 'ME' ? 'me' : 'them'}`;
+    region.style.top    = (displayTop * editorZoom) + 'px';
+    region.style.height = (sectionH  * editorZoom) + 'px';
     overlay.appendChild(region);
   });
 
@@ -520,26 +616,31 @@ function renderOverlay(scriptId) {
   topLine.style.top = '0px';
   overlay.appendChild(topLine);
 
-  // ── User split lines (draggable, with scissors) ─────────────────────────
+  // ── User split lines ────────────────────────────────────────────────────
   sorted.forEach((fraction, sortedIdx) => {
-    if (hiddenFracs.has(fraction)) return; // line borders a cut section — don't show it
-    const sectionIdx = sortedIdx + 1;
+    if (hiddenFracs.has(fraction)) return;
+    const sectionIdx = sortedIdx + 1; // section below this line
+    const displayTop = _displaySectionOffsets[sectionIdx];
+    if (displayTop === null) return;
+
     const minFrac = sortedIdx > 0 ? sorted[sortedIdx - 1] + 0.002 : 0.001;
     const maxFrac = sortedIdx < sorted.length - 1 ? sorted[sortedIdx + 1] - 0.002 : 0.999;
 
     const line = document.createElement('div');
     line.className = 'pdf-split-line';
-    line.style.top = (fraction * script.totalHeight * editorZoom) + 'px';
+    line.style.top = (displayTop * editorZoom) + 'px';
 
     let dragging = false, didDrag = false, startClientY = 0, liveFraction = fraction, longPressTimer = null;
+    const startDisplayTop = displayTop; // display Y at drag start
 
     const startDrag = cy => { dragging = true; didDrag = false; startClientY = cy; liveFraction = fraction; line.classList.add('dragging'); };
     const onMove = cy => {
       if (!dragging) return;
       const d = cy - startClientY;
       if (Math.abs(d) > 3) didDrag = true;
-      liveFraction = Math.max(minFrac, Math.min(maxFrac, fraction + d / (script.totalHeight * editorZoom)));
-      line.style.top = (liveFraction * script.totalHeight * editorZoom) + 'px';
+      const deltaDisp = d / editorZoom; // delta in CSS px — same in display and PDF space for non-DELETED sections
+      liveFraction = Math.max(minFrac, Math.min(maxFrac, fraction + deltaDisp / script.totalHeight));
+      line.style.top = ((startDisplayTop + deltaDisp) * editorZoom) + 'px';
     };
     const onEnd = () => {
       clearTimeout(longPressTimer);
@@ -548,7 +649,7 @@ function renderOverlay(scriptId) {
       if (didDrag) {
         const idx = script.splits.findIndex(f => f === fraction);
         if (idx !== -1) script.splits[idx] = liveFraction;
-        saveScripts(); renderOverlay(scriptId);
+        saveScripts(); rebuildDisplay(scriptId);
       }
     };
 
@@ -574,7 +675,7 @@ function renderOverlay(scriptId) {
   // ── Fixed bottom line ───────────────────────────────────────────────────
   const botLine = document.createElement('div');
   botLine.className = 'pdf-split-line pdf-split-line--fixed pdf-split-line--bottom';
-  botLine.style.top = (script.totalHeight * editorZoom) + 'px';
+  botLine.style.top = (_displayTotalHeight * editorZoom) + 'px';
   overlay.appendChild(botLine);
 }
 
@@ -643,7 +744,7 @@ function addSplit(scriptId, yPixels) {
   script.roles.splice(insertAt + 1, 0, currentRole === 'ME' ? 'THEM' : 'ME');
 
   saveScripts();
-  renderOverlay(scriptId);
+  rebuildDisplay(scriptId);
 }
 
 function removeSplit(scriptId, fraction) {
@@ -658,7 +759,7 @@ function removeSplit(scriptId, fraction) {
   script.roles.splice(idx + 1, 1);
 
   saveScripts();
-  renderOverlay(scriptId);
+  rebuildDisplay(scriptId);
 }
 
 // Set a role and cascade alternating ME/THEM to subsequent sections
@@ -682,7 +783,7 @@ function deleteSection(scriptId, sectionIndex) {
   if (!script) return;
   script.roles[sectionIndex] = 'DELETED';
   saveScripts();
-  renderOverlay(scriptId);
+  rebuildDisplay(scriptId);
 }
 
 // Extract text from PDF per section (called at completion)
@@ -1076,8 +1177,8 @@ function bindEvents() {
   document.getElementById('pdf-pages').addEventListener('click', e => {
     const pdfPages = document.getElementById('pdf-pages');
     const rect = pdfPages.getBoundingClientRect();
-    const y = (e.clientY - rect.top) / editorZoom;
-    if (state.currentScriptId) addSplit(state.currentScriptId, y);
+    const displayY = (e.clientY - rect.top) / editorZoom;
+    if (state.currentScriptId) addSplit(state.currentScriptId, displayYToPdfY(displayY, state.currentScriptId));
   });
   document.getElementById('pdf-viewer').addEventListener('contextmenu', e => e.preventDefault());
 

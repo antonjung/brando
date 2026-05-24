@@ -1233,16 +1233,6 @@ html, body {
 
 .line-menu-sep { height: 1px; background: var(--border); }
 
-/* ── Cut section — solid cover, nothing visible ── */
-.pdf-section-cut {
-  position: absolute;
-  left: 0;
-  right: 0;
-  background: var(--bg);
-  pointer-events: none;
-  z-index: 8;
-}
-
 /* ── Fixed top / bottom lines ────────────── */
 .pdf-split-line--fixed {
   transform: none;
