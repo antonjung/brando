@@ -224,15 +224,15 @@ function renderHome() {
 
   list.querySelectorAll('.script-card').forEach(card => {
     card.addEventListener('click', e => {
-      if (e.target.closest('[data-action="delete"]')) return;
+      if (e.target.closest('[data-action="actions"]')) return;
       selectScript(card.dataset.id);
     });
   });
 
-  list.querySelectorAll('[data-action="delete"]').forEach(btn => {
+  list.querySelectorAll('[data-action="actions"]').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      handleScriptAction('delete', btn.closest('.script-card').dataset.id);
+      showCardMenu(btn, btn.closest('.script-card').dataset.id);
     });
   });
 
@@ -281,9 +281,34 @@ function scriptCard(s) {
         <span class="script-status ${statusClass}">${statusLabel}</span>
       </div>
       <div class="script-card-actions">
-        <button class="script-action-btn danger" data-action="delete">${icon('trash-2',14)} Delete</button>
+        <button class="script-action-btn" data-action="actions">${icon('chevron-down',15)}</button>
       </div>
     </div>`;
+}
+
+function showCardMenu(anchor, scriptId) {
+  document.querySelectorAll('.line-menu').forEach(m => m.remove());
+  const menu = document.createElement('div');
+  menu.className = 'line-menu';
+  menu.innerHTML = `<button class="line-menu-item line-menu-cut" data-action="delete">${icon('trash-2', 13)} Delete script</button>`;
+
+  const r = anchor.getBoundingClientRect();
+  const menuW = 160, menuH = 46;
+  let left = r.right - menuW;
+  let top  = r.top - menuH - 6;
+  if (left < 4) left = 4;
+  if (top  < 4) top  = r.bottom + 6;
+  menu.style.left = left + 'px';
+  menu.style.top  = top  + 'px';
+  document.body.appendChild(menu);
+
+  menu.addEventListener('click', e => {
+    const item = e.target.closest('[data-action]');
+    if (!item) return;
+    menu.remove();
+    if (item.dataset.action === 'delete') handleScriptAction('delete', scriptId);
+  });
+  setTimeout(() => document.addEventListener('click', e => { if (!menu.contains(e.target)) menu.remove(); }, { once: true }), 10);
 }
 
 async function handleScriptAction(action, id) {
