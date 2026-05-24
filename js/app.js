@@ -510,7 +510,6 @@ function enterAuditionMode() {
   showView('view-audition');
   document.getElementById('audition-blank').style.opacity = '1';
   document.getElementById('audition-text-container').classList.add('hidden');
-  document.getElementById('footer-nav').classList.add('hidden');
 }
 
 function showMeText(text) {
@@ -780,6 +779,7 @@ function bindEvents() {
 
   // Footer nav
   document.getElementById('btn-footer-home').addEventListener('click', () => {
+    stopScrolling();
     if (state.peer) { try { state.peer.destroy(); } catch {} state.peer = null; }
     if (state.readerConn) { try { state.readerConn.close(); } catch {} state.readerConn = null; }
     showView('view-home'); renderHome();
@@ -825,10 +825,8 @@ function bindEvents() {
 
   // QR / Audition
   document.getElementById('btn-enter-audition').addEventListener('click', enterAuditionMode);
-  document.getElementById('btn-audition-settings').addEventListener('click', () => { renderSettings(); openPanel('settings-panel'); });
   document.getElementById('btn-exit-audition').addEventListener('click', () => {
     stopScrolling(); clearAudition();
-    document.getElementById('footer-nav').classList.remove('hidden');
     showView('view-home'); renderHome();
   });
 

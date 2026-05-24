@@ -111,11 +111,6 @@ html, body {
   overflow: hidden;
 }
 
-/* Audition is fullscreen */
-#view-audition {
-  top: 0;
-  bottom: 0;
-}
 
 .view.hidden {
   opacity: 0;
@@ -594,10 +589,6 @@ html, body {
 
 .exit-btn:active { background: rgba(255,255,255,0.25); }
 
-.audition-settings-btn {
-  right: auto;
-  left: 16px;
-}
 
 /* ── Reader Mode ──────────────────────────── */
 .reader-sections {
