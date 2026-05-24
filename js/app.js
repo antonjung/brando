@@ -285,29 +285,33 @@ function triggerImport() {
 }
 
 async function handleFile(file) {
-  if (!file || file.type !== 'application/pdf') { toast('Please select a PDF file'); return; }
-  document.getElementById('pdf-input-global').value = '';
+  try {
+    if (!file || file.type !== 'application/pdf') { toast('Please select a PDF file'); return; }
+    document.getElementById('pdf-input-global').value = '';
 
-  const name = file.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ');
-  toast(`Importing "${name}"…`);
+    const name = file.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ');
 
-  let buf;
-  try { buf = await file.arrayBuffer(); }
-  catch { toast('Failed to read PDF — try another file.'); return; }
+    let buf;
+    try { buf = await file.arrayBuffer(); }
+    catch { toast('Failed to read PDF — try another file.'); return; }
 
-  const script = {
-    id: uid(), name, lines: null, sections: null,
-    complete: false, createdAt: Date.now(),
-  };
+    const script = {
+      id: uid(), name, lines: null, sections: null,
+      complete: false, createdAt: Date.now(),
+    };
 
-  await savePDF(script.id, buf);
-  state.scripts.unshift(script);
-  saveScripts();
+    state.scripts.unshift(script);
+    try { saveScripts(); } catch (e) { console.warn('saveScripts failed:', e); }
+    state.currentScriptId = script.id;
+    showView('view-home');
+    renderHome();
+    toast(`"${name}" imported — tap Edit to set up`);
 
-  state.currentScriptId = script.id;
-  showView('view-home');
-  renderHome();
-  toast(`"${name}" imported — tap Edit to set up`);
+    savePDF(script.id, buf).catch(err => console.warn('PDF storage failed:', err));
+  } catch (err) {
+    toast('Import failed: ' + (err && err.message ? err.message : String(err)));
+    console.error('handleFile error:', err);
+  }
 }
 
 // ── PDF Text Extraction ───────────────────────────────────────────────────────
