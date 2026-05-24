@@ -90,10 +90,19 @@ async function deletePDF(id) {
 }
 
 // ── Navigation ───────────────────────────────────────────────────────────────
+const VIEW_TITLES = {
+  'view-home': 'Brando', 'view-import': 'Create Script', 'view-editor': 'Edit Script',
+  'view-qr': 'Connect Reader', 'view-reader': 'Reading', 'view-notes': 'Notes',
+};
+
 function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
   closeAllPanels();
+  const titleEl = document.getElementById('main-title');
+  if (titleEl) titleEl.textContent = VIEW_TITLES[id] || 'Brando';
+  const rs = document.getElementById('reader-status');
+  if (rs) rs.classList.toggle('hidden', id !== 'view-reader');
 }
 
 // ── Panels ───────────────────────────────────────────────────────────────────
@@ -139,9 +148,21 @@ function showConfirm(title, msg) {
 }
 
 // ── Theme ────────────────────────────────────────────────────────────────────
+function loadOpenDyslexic() {
+  if (document.getElementById('opendyslexic-css')) return;
+  ['400', '700'].forEach(w => {
+    const l = document.createElement('link');
+    l.rel = 'stylesheet';
+    if (w === '400') l.id = 'opendyslexic-css';
+    l.href = `https://cdn.jsdelivr.net/npm/@fontsource/opendyslexic/${w}.css`;
+    document.head.appendChild(l);
+  });
+}
+
 function applyTheme(theme) {
   document.body.setAttribute('data-theme', theme);
   document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === theme));
+  if (theme === 'dyslexia') loadOpenDyslexic();
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────
@@ -371,7 +392,7 @@ async function extractLines(pdfData) {
 async function renderEditor(scriptId) {
   const script = state.scripts.find(s => s.id === scriptId);
   if (!script) return;
-  document.getElementById('editor-title').textContent = script.name;
+  document.getElementById('main-title').textContent = script.name;
 
   const loading = document.getElementById('line-loading');
   const lineList = document.getElementById('line-list');
@@ -519,18 +540,20 @@ function stopScrolling() {
 function startReaderMode(script, conn) {
   state.readerConn = conn;
   const { meLabel, themLabel } = state.settings;
-  document.getElementById('reader-title').textContent = script.name;
+
+  showView('view-reader');
+  document.getElementById('main-title').textContent = script.name;
   const statusEl = document.getElementById('reader-status');
   statusEl.className = conn ? 'reader-status connected' : 'reader-status';
   statusEl.textContent = conn ? '●' : '○';
 
-  // Group consecutive same-character lines into blocks (skip CUT)
+  // Group consecutive same-role lines; skip unassigned/CUT without breaking grouping
   let lines;
   if (script.lines) {
     lines = [];
     let cur = null;
     for (const line of script.lines) {
-      if (!line.role || line.role === 'CUT') { cur = null; continue; }
+      if (!line.role || line.role === 'CUT') continue;
       if (!cur || cur.role !== line.role) {
         cur = { role: line.role, text: line.text };
         lines.push(cur);
@@ -566,8 +589,6 @@ function startReaderMode(script, conn) {
       else conn.send({ type: 'clear' });
     });
   });
-
-  showView('view-reader');
 }
 
 // ── Peer Connection ───────────────────────────────────────────────────────────
@@ -721,7 +742,11 @@ function bindEvents() {
   document.getElementById('btn-import-quit').addEventListener('click', () => { showView('view-home'); renderHome(); });
 
   // Footer nav
-  document.getElementById('btn-footer-home').addEventListener('click', () => { showView('view-home'); renderHome(); });
+  document.getElementById('btn-footer-home').addEventListener('click', () => {
+    if (state.peer) { try { state.peer.destroy(); } catch {} state.peer = null; }
+    if (state.readerConn) { try { state.readerConn.close(); } catch {} state.readerConn = null; }
+    showView('view-home'); renderHome();
+  });
   document.getElementById('btn-footer-edit').addEventListener('click', async () => {
     if (!state.currentScriptId) return;
     showView('view-editor');
@@ -738,8 +763,6 @@ function bindEvents() {
   });
 
   // Editor
-  document.getElementById('btn-editor-back').addEventListener('click', () => { showView('view-home'); renderHome(); });
-
   document.getElementById('btn-editor-done').addEventListener('click', () => {
     const script = state.scripts.find(s => s.id === state.currentScriptId);
     if (!script || !script.lines || !script.lines.length) { toast('No lines to save'); return; }
@@ -763,10 +786,6 @@ function bindEvents() {
   });
 
   // QR / Audition
-  document.getElementById('btn-qr-back').addEventListener('click', () => {
-    if (state.peer) { try { state.peer.destroy(); } catch {} state.peer = null; }
-    showView('view-home'); renderHome();
-  });
   document.getElementById('btn-enter-audition').addEventListener('click', enterAuditionMode);
   document.getElementById('btn-exit-audition').addEventListener('click', () => {
     stopScrolling(); clearAudition();
@@ -774,14 +793,7 @@ function bindEvents() {
     showView('view-home'); renderHome();
   });
 
-  // Reader
-  document.getElementById('btn-reader-back').addEventListener('click', () => {
-    if (state.readerConn) { try { state.readerConn.close(); } catch {} state.readerConn = null; }
-    showView('view-home'); renderHome();
-  });
-
   // Notes
-  document.getElementById('btn-notes-back').addEventListener('click', () => { showView('view-home'); renderHome(); });
   document.getElementById('btn-add-note').addEventListener('click', () => openNoteModal(null));
 
   // Update / Reload

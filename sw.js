@@ -1,4 +1,4 @@
-﻿const VERSION = '1.0.27';
+﻿const VERSION = '1.0.28';
 const CACHE = `brando-v${VERSION}`;
 const ASSETS = [
   '.',
@@ -28,7 +28,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   // Cache CDN resources
-  if (e.request.url.includes('cdnjs') || e.request.url.includes('unpkg')) {
+  if (e.request.url.includes('cdnjs') || e.request.url.includes('unpkg') || e.request.url.includes('jsdelivr')) {
     e.respondWith(
       caches.open(CACHE).then(async c => {
         const cached = await c.match(e.request);

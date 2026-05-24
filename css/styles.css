@@ -43,32 +43,30 @@
 }
 
 [data-theme="dyslexia"] {
-  --bg: #f8f0d8;
+  --bg: #fdf7e3;
   --surface: #fffbf0;
   --surface2: #f0ead8;
-  --accent: #6b4c11;
-  --accent2: #8b6422;
-  --text: #1a1000;
-  --text-muted: #4a3800;
+  --accent: #1d4ed8;
+  --accent2: #2563eb;
+  --text: #1c1917;
+  --text-muted: #78716c;
   --me-bg: #e0f0e0;
   --me-color: #0a3a0a;
   --them-bg: #f5e0d0;
   --them-color: #4a1500;
-  --border: #c8b888;
-  --panel-bg: #fdfaf0;
-  --font: 'Atkinson Hyperlegible', Arial, sans-serif;
-  letter-spacing: 0.05em;
-  word-spacing: 0.15em;
-  line-height: 1.8;
+  --border: #e3d5b0;
+  --panel-bg: #fffbf0;
+  --font: 'OpenDyslexic', sans-serif;
 }
 
-/* Bump readable content sizes — px values don't inherit from body font-size */
-[data-theme="dyslexia"] .line-text,
-[data-theme="dyslexia"] .reader-section-text,
-[data-theme="dyslexia"] .note-text { font-size: 17px; line-height: 1.9; }
-
-[data-theme="dyslexia"] .script-card-title { font-size: 18px; }
-[data-theme="dyslexia"] .script-card-meta  { font-size: 14px; }
+/* Apply OpenDyslexic to every element — !important overrides explicit font-family declarations */
+body[data-theme="dyslexia"],
+body[data-theme="dyslexia"] * {
+  font-family: 'OpenDyslexic', sans-serif !important;
+  letter-spacing: 0.05em;
+  word-spacing: 0.15em;
+  line-height: 1.6;
+}
 
 html, body {
   height: 100%;
@@ -86,10 +84,25 @@ html, body {
   overflow: hidden;
 }
 
+/* ── Persistent header ────────────────────── */
+.main-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 50;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.main-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* ── Views ────────────────────────────────── */
 .view {
   position: absolute;
-  top: 0; left: 0; right: 0;
+  top: var(--header-h); left: 0; right: 0;
   bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
@@ -98,8 +111,9 @@ html, body {
   overflow: hidden;
 }
 
-/* Audition is fullscreen — no footer needed */
+/* Audition is fullscreen */
 #view-audition {
+  top: 0;
   bottom: 0;
 }
 
@@ -280,12 +294,23 @@ html, body {
 /* ── Import ───────────────────────────────── */
 .import-content {
   flex: 1;
+  min-height: 0;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 20px;
   overflow-y: auto;
 }
+
+.import-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.import-actions .btn-primary,
+.import-actions .btn-secondary { flex: 1; }
 
 .form-group {
   display: flex;
@@ -352,6 +377,21 @@ html, body {
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.editor-done-bar {
+  flex-shrink: 0;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.editor-done-bar .btn-primary {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .line-list {
@@ -607,6 +647,14 @@ html, body {
 .reader-section[data-role="THEM"] .reader-section-text { color: var(--them-color); }
 
 /* ── Notes ────────────────────────────────── */
+.notes-action-bar {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
 .notes-list {
   flex: 1;
   min-height: 0;

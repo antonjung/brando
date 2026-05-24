@@ -12,19 +12,25 @@
   <meta name="apple-mobile-web-app-title" content="Brando">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body data-theme="dark">
+
+<!-- ── Persistent Header ─────────────────── -->
+<header id="main-header" class="app-header main-header">
+  <button class="icon-btn" id="btn-menu"><i data-feather="menu"></i></button>
+  <div class="main-title-wrap">
+    <h1 id="main-title">Brando</h1>
+    <div id="reader-status" class="reader-status hidden">&#9679;</div>
+  </div>
+  <button class="icon-btn" id="btn-settings"><i data-feather="settings"></i></button>
+</header>
+
 <div id="app">
 
   <!-- ── Home ──────────────────────────────── -->
   <div id="view-home" class="view">
-    <header class="app-header">
-      <button class="icon-btn" id="btn-menu"><i data-feather="menu"></i></button>
-      <h1>Brando</h1>
-      <button class="icon-btn" id="btn-settings"><i data-feather="settings"></i></button>
-    </header>
     <div id="script-list" class="script-list hidden"></div>
     <div id="empty-state" class="empty-state hidden">
       <div class="empty-icon"><i data-feather="film"></i></div>
@@ -35,40 +41,34 @@
 
   <!-- ── Import / Create Script ───────────── -->
   <div id="view-import" class="view hidden">
-    <header class="app-header">
-      <button class="icon-btn" id="btn-import-quit"><i data-feather="x"></i></button>
-      <h1>Create Script</h1>
-      <button class="icon-btn" id="btn-import-confirm" disabled><i data-feather="check"></i></button>
-    </header>
     <div class="import-content">
       <div class="form-group">
         <label>Script Name</label>
         <input type="text" id="script-name" placeholder="Enter script name..." autocomplete="off">
       </div>
       <div id="import-progress" class="import-progress hidden"></div>
+      <div class="import-actions">
+        <button class="btn-secondary" id="btn-import-quit">Cancel</button>
+        <button class="btn-primary" id="btn-import-confirm" disabled>Create Script</button>
+      </div>
     </div>
   </div>
 
   <!-- ── Editor ────────────────────────────── -->
   <div id="view-editor" class="view hidden">
-    <header class="app-header">
-      <button class="icon-btn" id="btn-editor-back"><i data-feather="arrow-left"></i></button>
-      <h1 id="editor-title">Edit Script</h1>
-      <button class="icon-btn" id="btn-editor-done"><i data-feather="check"></i></button>
-    </header>
     <div class="line-list-wrap">
       <div id="line-list" class="line-list"></div>
       <div id="line-loading" class="line-loading-msg hidden">Extracting text…</div>
+    </div>
+    <div class="editor-done-bar">
+      <button class="btn-primary" id="btn-editor-done">
+        <i data-feather="check"></i> Done
+      </button>
     </div>
   </div>
 
   <!-- ── QR ────────────────────────────────── -->
   <div id="view-qr" class="view hidden">
-    <header class="app-header">
-      <button class="icon-btn" id="btn-qr-back"><i data-feather="arrow-left"></i></button>
-      <h1>Connect Reader</h1>
-      <div style="width:40px"></div>
-    </header>
     <div class="qr-content">
       <p class="qr-instructions">Have your reader scan this QR code to connect</p>
       <div id="qr-code" class="qr-container"></div>
@@ -100,21 +100,14 @@
 
   <!-- ── Reader ────────────────────────────── -->
   <div id="view-reader" class="view hidden">
-    <header class="app-header">
-      <button class="icon-btn" id="btn-reader-back"><i data-feather="arrow-left"></i></button>
-      <h1 id="reader-title">Reading</h1>
-      <div id="reader-status" class="reader-status">&#9679;</div>
-    </header>
     <div id="reader-sections" class="reader-sections"></div>
   </div>
 
   <!-- ── Notes ─────────────────────────────── -->
   <div id="view-notes" class="view hidden">
-    <header class="app-header">
-      <button class="icon-btn" id="btn-notes-back"><i data-feather="arrow-left"></i></button>
-      <h1>Notes</h1>
+    <div class="notes-action-bar">
       <button class="icon-btn" id="btn-add-note"><i data-feather="plus"></i></button>
-    </header>
+    </div>
     <div id="notes-list" class="notes-list"></div>
   </div>
 
