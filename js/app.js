@@ -295,12 +295,8 @@ async function handleFile(file) {
   try { buf = await file.arrayBuffer(); }
   catch { toast('Failed to read PDF — try another file.'); return; }
 
-  let lines = [];
-  try { lines = await extractLines(buf); }
-  catch (err) { console.warn('extractLines failed:', err); }
-
   const script = {
-    id: uid(), name, lines, sections: null,
+    id: uid(), name, lines: null, sections: null,
     complete: false, createdAt: Date.now(),
   };
 
@@ -311,7 +307,7 @@ async function handleFile(file) {
   state.currentScriptId = script.id;
   showView('view-home');
   renderHome();
-  toast(lines.length ? `"${name}" — ${lines.length} lines found` : `"${name}" imported`);
+  toast(`"${name}" imported — tap Edit to set up`);
 }
 
 // ── PDF Text Extraction ───────────────────────────────────────────────────────
