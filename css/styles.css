@@ -1088,6 +1088,20 @@ html, body {
   margin-top: auto;
 }
 
+.app-version-badge {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  color: var(--text-muted);
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 5;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
 /* ── Overlay must override .hidden for its own fade ─ */
 .overlay.hidden {
   display: block !important;
