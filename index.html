@@ -6,13 +6,13 @@
   <title>Brando</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/brando.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
   <meta name="theme-color" content="#0d0d1a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Brando">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body data-theme="dark">
@@ -21,25 +21,23 @@
   <!-- ── Home ──────────────────────────────── -->
   <div id="view-home" class="view">
     <header class="app-header">
-      <button class="icon-btn" id="btn-menu" title="Menu">&#9776;</button>
+      <button class="icon-btn" id="btn-menu"><i data-feather="menu"></i></button>
       <h1>Brando</h1>
-      <button class="icon-btn" id="btn-settings" title="Settings">&#9881;</button>
+      <button class="icon-btn" id="btn-settings"><i data-feather="settings"></i></button>
     </header>
     <div id="script-list" class="script-list hidden"></div>
     <div id="empty-state" class="empty-state hidden">
-      <div class="empty-icon">&#127917;</div>
+      <div class="empty-icon"><i data-feather="film"></i></div>
       <p>No scripts yet.<br>Import a PDF to get started.</p>
       <button class="btn-primary" id="btn-import-empty">Import PDF</button>
     </div>
-    <div class="app-footer">
-      <span id="app-version"></span>
-    </div>
+    <div class="app-footer"><span id="app-version"></span></div>
   </div>
 
   <!-- ── Import ────────────────────────────── -->
   <div id="view-import" class="view hidden">
     <header class="app-header">
-      <button class="icon-btn" id="btn-import-back">&#8592;</button>
+      <button class="icon-btn" id="btn-import-back"><i data-feather="arrow-left"></i></button>
       <h1>Import Script</h1>
       <div style="width:40px"></div>
     </header>
@@ -49,11 +47,11 @@
         <input type="text" id="script-name" placeholder="Enter script name..." autocomplete="off">
       </div>
       <div class="drop-zone" id="drop-zone">
-        <div class="drop-icon">&#128196;</div>
+        <div class="drop-icon"><i data-feather="file-text"></i></div>
         <p id="drop-label">Tap to select PDF</p>
         <input type="file" id="pdf-input" accept=".pdf" hidden>
       </div>
-      <div id="import-progress" class="import-progress hidden">Reading PDF&hellip;</div>
+      <div id="import-progress" class="import-progress hidden">Loading PDF&hellip;</div>
       <button class="btn-primary hidden" id="btn-create-script">Create Script</button>
     </div>
   </div>
@@ -61,11 +59,16 @@
   <!-- ── Editor ────────────────────────────── -->
   <div id="view-editor" class="view hidden">
     <header class="app-header">
-      <button class="icon-btn" id="btn-editor-back">&#8592;</button>
+      <button class="icon-btn" id="btn-editor-back"><i data-feather="arrow-left"></i></button>
       <h1 id="editor-title">Edit Script</h1>
-      <button class="icon-btn" id="btn-editor-done" title="Mark complete">&#10003;</button>
+      <button class="icon-btn" id="btn-editor-done"><i data-feather="check"></i></button>
     </header>
-    <div class="editor-hint">Tap anywhere to split &bull; Tap &#10005; on a line to remove &bull; Set each section to ME, THEM or delete it</div>
+    <div class="editor-hint">Tap to add a split &bull; Tap &#10005; to remove a split &bull; Assign each section ME or THEM</div>
+    <div class="editor-toolbar">
+      <i data-feather="zoom-in" class="toolbar-icon"></i>
+      <input type="range" id="zoom-slider" min="50" max="250" step="10" value="100">
+      <span id="zoom-val">100%</span>
+    </div>
     <div id="pdf-viewer" class="pdf-viewer">
       <div id="pdf-pages" class="pdf-pages"></div>
       <div id="pdf-loading" class="pdf-loading hidden">Rendering PDF&hellip;</div>
@@ -75,7 +78,7 @@
   <!-- ── QR ────────────────────────────────── -->
   <div id="view-qr" class="view hidden">
     <header class="app-header">
-      <button class="icon-btn" id="btn-qr-back">&#8592;</button>
+      <button class="icon-btn" id="btn-qr-back"><i data-feather="arrow-left"></i></button>
       <h1>Connect Reader</h1>
       <div style="width:40px"></div>
     </header>
@@ -87,7 +90,9 @@
         <span id="status-text">Waiting for connection&hellip;</span>
       </div>
       <div id="peer-id-display" class="peer-id"></div>
-      <button class="btn-secondary hidden" id="btn-enter-audition">Enter Audition Mode &#9654;</button>
+      <button class="btn-secondary hidden" id="btn-enter-audition">
+        Enter Audition Mode <i data-feather="play"></i>
+      </button>
     </div>
   </div>
 
@@ -103,13 +108,13 @@
     <div id="audition-text-container" class="audition-text-container hidden">
       <div id="audition-text" class="audition-text"></div>
     </div>
-    <button id="btn-exit-audition" class="exit-btn">&#10005;</button>
+    <button id="btn-exit-audition" class="exit-btn"><i data-feather="x"></i></button>
   </div>
 
   <!-- ── Reader ────────────────────────────── -->
   <div id="view-reader" class="view hidden">
     <header class="app-header">
-      <button class="icon-btn" id="btn-reader-back">&#8592;</button>
+      <button class="icon-btn" id="btn-reader-back"><i data-feather="arrow-left"></i></button>
       <h1 id="reader-title">Reading</h1>
       <div id="reader-status" class="reader-status">&#9679;</div>
     </header>
@@ -119,9 +124,9 @@
   <!-- ── Notes ─────────────────────────────── -->
   <div id="view-notes" class="view hidden">
     <header class="app-header">
-      <button class="icon-btn" id="btn-notes-back">&#8592;</button>
+      <button class="icon-btn" id="btn-notes-back"><i data-feather="arrow-left"></i></button>
       <h1>Notes</h1>
-      <button class="icon-btn" id="btn-add-note" title="Add note">&#43;</button>
+      <button class="icon-btn" id="btn-add-note"><i data-feather="plus"></i></button>
     </header>
     <div id="notes-list" class="notes-list"></div>
   </div>
@@ -130,7 +135,7 @@
 
 <!-- ── Update Banner ──────────────────────── -->
 <div id="update-banner" class="update-banner hidden">
-  <span>&#10024; New version available</span>
+  <span><i data-feather="download-cloud"></i> New version available</span>
   <button id="btn-apply-update">Update Now</button>
 </div>
 
@@ -138,25 +143,25 @@
 <div id="overlay" class="overlay hidden"></div>
 
 <!-- ── Hamburger Menu ─────────────────────── -->
-<nav id="menu-panel" class="slide-panel left" aria-hidden="true">
+<nav id="menu-panel" class="slide-panel left">
   <div class="panel-header">
     <h2>Brando</h2>
-    <button class="icon-btn" id="btn-menu-close">&#10005;</button>
+    <button class="icon-btn" id="btn-menu-close"><i data-feather="x"></i></button>
   </div>
   <ul class="menu-list">
-    <li><button id="menu-import">&#128196; Import PDF</button></li>
-    <li><button id="menu-notes">&#128221; Notes</button></li>
+    <li><button id="menu-import"><i data-feather="file-text"></i> Import PDF</button></li>
+    <li><button id="menu-notes"><i data-feather="book-open"></i> Notes</button></li>
     <li class="menu-divider"></li>
-    <li><button id="menu-check-update">&#8635; Check for Update</button></li>
-    <li><button id="menu-reload">&#128260; Reload App</button></li>
+    <li><button id="menu-check-update"><i data-feather="refresh-cw"></i> Check for Update</button></li>
+    <li><button id="menu-reload"><i data-feather="rotate-ccw"></i> Reload App</button></li>
   </ul>
   <div class="menu-version" id="menu-version"></div>
 </nav>
 
 <!-- ── Settings Panel ─────────────────────── -->
-<div id="settings-panel" class="slide-panel right" aria-hidden="true">
+<div id="settings-panel" class="slide-panel right">
   <div class="panel-header">
-    <button class="icon-btn" id="btn-settings-close">&#10005;</button>
+    <button class="icon-btn" id="btn-settings-close"><i data-feather="x"></i></button>
     <h2>Settings</h2>
   </div>
   <div class="settings-content">
@@ -185,11 +190,10 @@
 </div>
 
 <!-- CDN libs -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
-        crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
-        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script src="https://unpkg.com/feather-icons@4.29.2/dist/feather.min.js"></script>
 <script src="version.js"></script>
 <script src="js/app.js"></script>
 </body>

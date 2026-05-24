@@ -6,7 +6,16 @@ const BASE_URL = (() => {
   return u.endsWith('index.html') ? u.slice(0, -10) : u + '/';
 })();
 
-const APP_VERSION = window.APP_VERSION || '—';
+const APP_VERSION = window.APP_VERSION || '-';
+
+// ── Feather icon helper ───────────────────────────────────────────────────────
+function icon(name, size = 16) {
+  if (typeof feather === 'undefined') return '';
+  return feather.toSvg(name, { width: size, height: size, 'stroke-width': 2 });
+}
+
+// ── Editor zoom ───────────────────────────────────────────────────────────────
+let editorZoom = 1.0;
 
 // ── State ────────────────────────────────────────────────────────────────────
 const state = {
@@ -203,6 +212,7 @@ function renderHome() {
   list.classList.remove('hidden');
   list.innerHTML = state.scripts.map(scriptCard).join('');
 
+  if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2 });
   list.querySelectorAll('.script-action-btn[data-action]').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
@@ -227,12 +237,12 @@ function scriptCard(s) {
         <span class="script-status ${statusClass}">${statusLabel}</span>
       </div>
       <div class="script-card-actions">
-        <button class="script-action-btn" data-action="edit">&#9998; Edit</button>
+        <button class="script-action-btn" data-action="edit">${icon('edit-2',14)} Edit</button>
         ${s.complete
-          ? `<button class="script-action-btn primary-action" data-action="audition">&#127917; Audition</button>
-             <button class="script-action-btn primary-action" data-action="reader">&#128214; Reader</button>`
+          ? `<button class="script-action-btn primary-action" data-action="audition">${icon('film',14)} Audition</button>
+             <button class="script-action-btn primary-action" data-action="reader">${icon('book-open',14)} Reader</button>`
           : ''}
-        <button class="script-action-btn danger" data-action="delete">&#128465;</button>
+        <button class="script-action-btn danger" data-action="delete">${icon('trash-2',14)}</button>
       </div>
     </div>`;
 }
@@ -354,6 +364,9 @@ async function createScript() {
   toast('Tap the PDF to add splits');
 }
 
+// Tracks which section is showing the inline delete confirmation
+let confirmingDelete = null; // { scriptId, sectionIndex }
+
 // ── PDF Editor ────────────────────────────────────────────────────────────────
 async function renderEditor(scriptId) {
   const script = state.scripts.find(s => s.id === scriptId);
@@ -361,9 +374,15 @@ async function renderEditor(scriptId) {
 
   document.getElementById('editor-title').textContent = script.name;
 
+  // Reset zoom
+  editorZoom = 1.0;
+  document.getElementById('zoom-slider').value = 100;
+  document.getElementById('zoom-val').textContent = '100%';
+
   const pdfPages = document.getElementById('pdf-pages');
   const pdfLoading = document.getElementById('pdf-loading');
   pdfPages.innerHTML = '';
+  pdfPages.style.zoom = 1;
   pdfLoading.classList.remove('hidden');
 
   let pdfData;
@@ -450,41 +469,80 @@ function renderOverlay(scriptId) {
     if (i >= boundaries.length - 1) return;
     const bottom = boundaries[i + 1];
     const role = script.roles[i] || 'THEM';
-    const regionClass = role === 'ME' ? 'me' : 'them';
+    const isDeleted = role === 'DELETED';
+    const isConfirming = confirmingDelete &&
+      confirmingDelete.scriptId === scriptId &&
+      confirmingDelete.sectionIndex === i;
 
+    const regionClass = isDeleted ? 'deleted' : role === 'ME' ? 'me' : 'them';
     const region = document.createElement('div');
     region.className = `pdf-section ${regionClass}`;
     region.style.top = top + 'px';
     region.style.height = (bottom - top) + 'px';
 
-    // Role pill: ME / THEM / delete
     const pill = document.createElement('div');
     pill.className = 'section-pill';
 
-    [['ME', meLabel], ['THEM', themLabel]].forEach(([r, label]) => {
-      const btn = document.createElement('button');
-      btn.className = 'section-pill-btn' + (r === role ? ' active' : '');
-      btn.textContent = label;
-      btn.dataset.role = r;
-      btn.addEventListener('click', e => {
-        e.stopPropagation();
-        setRoleWithCascade(scriptId, i, r);
-      });
-      pill.appendChild(btn);
-    });
+    if (isConfirming) {
+      // Inline confirmation
+      const label = document.createElement('span');
+      label.className = 'pill-confirm-label';
+      label.textContent = 'Exclude?';
+      pill.appendChild(label);
 
-    // Delete button — removes the section's boundary, merging with neighbour
-    const delBtn = document.createElement('button');
-    delBtn.className = 'section-pill-btn pill-delete';
-    delBtn.textContent = '🗑';
-    delBtn.title = 'Delete section';
-    delBtn.addEventListener('click', async e => {
-      e.stopPropagation();
-      const ok = await showConfirm('Delete section',
-        'Remove this section? Its content will be absorbed into the adjacent section.');
-      if (ok) deleteSection(scriptId, i);
-    });
-    pill.appendChild(delBtn);
+      const yes = document.createElement('button');
+      yes.className = 'section-pill-btn pill-confirm-yes';
+      yes.textContent = '✓ Yes';
+      yes.addEventListener('click', e => { e.stopPropagation(); deleteSection(scriptId, i); });
+      pill.appendChild(yes);
+
+      const no = document.createElement('button');
+      no.className = 'section-pill-btn pill-confirm-no';
+      no.textContent = '✗ No';
+      no.addEventListener('click', e => {
+        e.stopPropagation();
+        confirmingDelete = null;
+        renderOverlay(scriptId);
+      });
+      pill.appendChild(no);
+
+    } else if (isDeleted) {
+      // Restore pill for deleted sections
+      const label = document.createElement('span');
+      label.className = 'pill-excluded-label';
+      label.textContent = 'Excluded';
+      pill.appendChild(label);
+
+      [['ME', meLabel], ['THEM', themLabel]].forEach(([r, label]) => {
+        const btn = document.createElement('button');
+        btn.className = 'section-pill-btn';
+        btn.textContent = label;
+        btn.addEventListener('click', e => { e.stopPropagation(); setRoleWithCascade(scriptId, i, r); });
+        pill.appendChild(btn);
+      });
+
+    } else {
+      // Normal pill: ME / THEM / 🗑
+      [['ME', meLabel], ['THEM', themLabel]].forEach(([r, label]) => {
+        const btn = document.createElement('button');
+        btn.className = 'section-pill-btn' + (r === role ? ' active' : '');
+        btn.textContent = label;
+        btn.dataset.role = r;
+        btn.addEventListener('click', e => { e.stopPropagation(); setRoleWithCascade(scriptId, i, r); });
+        pill.appendChild(btn);
+      });
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'section-pill-btn pill-delete';
+      delBtn.innerHTML = icon('trash-2', 13);
+      delBtn.title = 'Exclude section';
+      delBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        confirmingDelete = { scriptId, sectionIndex: i };
+        renderOverlay(scriptId);
+      });
+      pill.appendChild(delBtn);
+    }
 
     region.appendChild(pill);
     overlay.appendChild(region);
@@ -499,7 +557,7 @@ function renderOverlay(scriptId) {
 
     const removeBtn = document.createElement('button');
     removeBtn.className = 'pdf-split-remove';
-    removeBtn.textContent = '✕';
+    removeBtn.innerHTML = icon('x', 13);
     removeBtn.title = 'Remove split';
     removeBtn.addEventListener('click', e => {
       e.stopPropagation();
@@ -555,13 +613,15 @@ function removeSplit(scriptId, fraction) {
   renderOverlay(scriptId);
 }
 
-// Set a role and cascade alternating roles to all subsequent sections
+// Set a role and cascade alternating ME/THEM to subsequent non-deleted sections
 function setRoleWithCascade(scriptId, sectionIndex, role) {
   const script = state.scripts.find(s => s.id === scriptId);
   if (!script) return;
+  confirmingDelete = null;
   script.roles[sectionIndex] = role;
   let current = role;
   for (let i = sectionIndex + 1; i < script.roles.length; i++) {
+    if (script.roles[i] === 'DELETED') continue;
     current = current === 'ME' ? 'THEM' : 'ME';
     script.roles[i] = current;
   }
@@ -569,25 +629,12 @@ function setRoleWithCascade(scriptId, sectionIndex, role) {
   renderOverlay(scriptId);
 }
 
-// Delete section by removing its bordering split and merging into neighbour
+// Mark section as excluded — splits stay, section is just skipped in output
 function deleteSection(scriptId, sectionIndex) {
   const script = state.scripts.find(s => s.id === scriptId);
   if (!script) return;
-  const sorted = [...script.splits].sort((a, b) => a - b);
-  if (sorted.length === 0) { toast('Cannot delete the only section'); return; }
-
-  if (sectionIndex === 0) {
-    // Merge forward: remove the first split, keep next section's role
-    const remove = sorted[0];
-    script.splits = script.splits.filter(f => f !== remove);
-    script.roles.splice(0, 1);
-  } else {
-    // Merge backward: remove the split before this section, keep previous section's role
-    const remove = sorted[sectionIndex - 1];
-    script.splits = script.splits.filter(f => f !== remove);
-    script.roles.splice(sectionIndex, 1);
-  }
-
+  confirmingDelete = null;
+  script.roles[sectionIndex] = 'DELETED';
   saveScripts();
   renderOverlay(scriptId);
 }
@@ -649,7 +696,7 @@ async function extractSectionTexts(scriptId) {
     if (line.length) lines.push(line.join(' '));
 
     const role = script.roles[i] || 'THEM';
-    if (role !== 'TRASH') {
+    if (role !== 'DELETED') {
       script.sections.push({ role, text: lines.join('\n') });
     }
   }
@@ -831,8 +878,8 @@ function renderNotes() {
     <div class="note-card" data-id="${n.id}">
       <div class="note-text">${esc(n.text)}</div>
       <div class="note-actions">
-        <button class="note-action-btn edit" title="Edit">&#9998;</button>
-        <button class="note-action-btn delete" title="Delete">&#128465;</button>
+        <button class="note-action-btn edit" title="Edit">${icon('edit-2',15)}</button>
+        <button class="note-action-btn delete" title="Delete">${icon('trash-2',15)}</button>
       </div>
     </div>`).join('');
 
@@ -963,13 +1010,19 @@ function bindEvents() {
     renderHome();
   });
 
-  // PDF tap-to-split
+  // PDF tap-to-split (account for CSS zoom on pdf-pages)
   document.getElementById('pdf-pages').addEventListener('click', e => {
-    // Clicks on overlay buttons are already handled with stopPropagation
     const pdfPages = document.getElementById('pdf-pages');
     const rect = pdfPages.getBoundingClientRect();
-    const y = e.clientY - rect.top;
+    const y = (e.clientY - rect.top) / editorZoom;
     if (state.currentScriptId) addSplit(state.currentScriptId, y);
+  });
+
+  // Zoom slider
+  document.getElementById('zoom-slider').addEventListener('input', e => {
+    editorZoom = +e.target.value / 100;
+    document.getElementById('zoom-val').textContent = e.target.value + '%';
+    document.getElementById('pdf-pages').style.zoom = editorZoom;
   });
 
   // QR / Audition
@@ -1007,6 +1060,8 @@ function init() {
   bindEvents();
   initSettingsListeners();
   registerSW();
+
+  if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2 });
 
   const vText = `v${APP_VERSION}`;
   const vEl = document.getElementById('app-version');
