@@ -1072,9 +1072,10 @@ html, body {
 /* ── PDF Viewer ───────────────────────────── */
 .pdf-viewer {
   flex: 1;
-  overflow-y: auto;
+  overflow: auto;
   position: relative;
   background: #888;
+  -webkit-overflow-scrolling: touch;
 }
 
 .pdf-pages {
@@ -1085,6 +1086,13 @@ html, body {
 
 .pdf-pages canvas {
   display: block;
+}
+
+#pdf-canvas-layer {
+  display: block;
+  font-size: 0;
+  line-height: 0;
+  transform-origin: top left;
 }
 
 .pdf-loading {
@@ -1163,17 +1171,10 @@ html, body {
 .pdf-section.me   .section-pill-btn[data-role="ME"].active   { border-color: rgba(100,220,100,0.9); color: #7fff7f; }
 .pdf-section.them .section-pill-btn[data-role="THEM"].active  { border-color: rgba(220,100,100,0.9); color: #ffaaaa; }
 
-/* Deleted / excluded section */
+/* Deleted / excluded section — transparent so PDF shows through */
 .pdf-section.deleted {
-  background: repeating-linear-gradient(
-    -45deg,
-    rgba(80,80,80,0.07) 0px,
-    rgba(80,80,80,0.07) 6px,
-    transparent 6px,
-    transparent 14px
-  );
-  border-color: rgba(150,150,150,0.35);
-  opacity: 0.55;
+  background: transparent;
+  border-color: transparent;
 }
 
 /* Inline delete confirm */

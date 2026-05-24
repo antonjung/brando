@@ -16,6 +16,8 @@ function icon(name, size = 16) {
 
 // ── Editor zoom ───────────────────────────────────────────────────────────────
 let editorZoom = 1.0;
+let _pdfNaturalWidth = 0;
+let _pdfNaturalHeight = 0;
 
 // ── State ────────────────────────────────────────────────────────────────────
 const state = {
@@ -376,13 +378,15 @@ async function renderEditor(scriptId) {
 
   // Reset zoom
   editorZoom = 1.0;
+  _pdfNaturalWidth = 0;
+  _pdfNaturalHeight = 0;
   document.getElementById('zoom-slider').value = 100;
   document.getElementById('zoom-val').textContent = '100%';
 
   const pdfPages = document.getElementById('pdf-pages');
   const pdfLoading = document.getElementById('pdf-loading');
   pdfPages.innerHTML = '';
-  pdfPages.style.zoom = 1;
+  pdfPages.style.width = '';
   pdfLoading.classList.remove('hidden');
 
   let pdfData;
@@ -417,6 +421,12 @@ async function renderEditor(scriptId) {
   script.totalHeight = 0;
   script.renderScale = scale;
 
+  // Canvas layer is what gets scaled — pills and split buttons live outside it
+  const canvasLayer = document.createElement('div');
+  canvasLayer.id = 'pdf-canvas-layer';
+  canvasLayer.style.transformOrigin = 'top left';
+  pdfPages.appendChild(canvasLayer);
+
   for (let pn = 1; pn <= pdf.numPages; pn++) {
     const page = await pdf.getPage(pn);
     const viewport = page.getViewport({ scale });
@@ -427,10 +437,10 @@ async function renderEditor(scriptId) {
     const canvas = document.createElement('canvas');
     canvas.width = Math.round(cssW * DPR);
     canvas.height = Math.round(cssH * DPR);
-    canvas.style.width = '100%';
+    canvas.style.width = cssW + 'px';
     canvas.style.height = cssH + 'px';
     canvas.style.display = 'block';
-    pdfPages.appendChild(canvas);
+    canvasLayer.appendChild(canvas);
 
     const ctx = canvas.getContext('2d');
     ctx.scale(DPR, DPR);
@@ -440,9 +450,12 @@ async function renderEditor(scriptId) {
     script.totalHeight += cssH;
   }
 
+  _pdfNaturalWidth = containerWidth;
+  _pdfNaturalHeight = script.totalHeight;
+  pdfPages.style.width = containerWidth + 'px';
   saveScripts();
 
-  // Build the interaction overlay on top of the canvases
+  // Overlay sits alongside the canvas layer — not inside it, so it doesn't scale
   const overlay = document.createElement('div');
   overlay.id = 'pdf-overlay';
   overlay.className = 'pdf-overlay';
@@ -458,7 +471,7 @@ function renderOverlay(scriptId) {
   if (!overlay || !script || !script.totalHeight) return;
 
   overlay.innerHTML = '';
-  overlay.style.height = script.totalHeight + 'px';
+  overlay.style.height = (script.totalHeight * editorZoom) + 'px';
 
   const { meLabel, themLabel } = state.settings;
   const sorted = [...script.splits].sort((a, b) => a - b);
@@ -477,8 +490,8 @@ function renderOverlay(scriptId) {
     const regionClass = isDeleted ? 'deleted' : role === 'ME' ? 'me' : 'them';
     const region = document.createElement('div');
     region.className = `pdf-section ${regionClass}`;
-    region.style.top = top + 'px';
-    region.style.height = (bottom - top) + 'px';
+    region.style.top = (top * editorZoom) + 'px';
+    region.style.height = ((bottom - top) * editorZoom) + 'px';
 
     const pill = document.createElement('div');
     pill.className = 'section-pill';
@@ -550,7 +563,7 @@ function renderOverlay(scriptId) {
 
   // Split lines
   sorted.forEach(fraction => {
-    const y = fraction * script.totalHeight;
+    const y = fraction * script.totalHeight * editorZoom;
     const line = document.createElement('div');
     line.className = 'pdf-split-line';
     line.style.top = y + 'px';
@@ -1018,11 +1031,20 @@ function bindEvents() {
     if (state.currentScriptId) addSplit(state.currentScriptId, y);
   });
 
-  // Zoom slider
+  // Zoom slider — scales only the canvas layer, not the overlay controls
   document.getElementById('zoom-slider').addEventListener('input', e => {
     editorZoom = +e.target.value / 100;
     document.getElementById('zoom-val').textContent = e.target.value + '%';
-    document.getElementById('pdf-pages').style.zoom = editorZoom;
+    const canvasLayer = document.getElementById('pdf-canvas-layer');
+    const pdfPages = document.getElementById('pdf-pages');
+    if (canvasLayer && _pdfNaturalWidth) {
+      canvasLayer.style.transform = `scale(${editorZoom})`;
+      // Expand layout to match visual size so viewer scrolls correctly
+      canvasLayer.style.marginRight = `${Math.max(0, _pdfNaturalWidth * (editorZoom - 1))}px`;
+      canvasLayer.style.marginBottom = `${Math.max(0, _pdfNaturalHeight * (editorZoom - 1))}px`;
+      pdfPages.style.width = (_pdfNaturalWidth * Math.max(1, editorZoom)) + 'px';
+    }
+    if (state.currentScriptId) renderOverlay(state.currentScriptId);
   });
 
   // QR / Audition
