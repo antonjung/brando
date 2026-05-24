@@ -518,20 +518,28 @@ function showMeText(text) {
   const textEl = document.getElementById('audition-text');
   const blank = document.getElementById('audition-blank');
   textEl.textContent = text;
+  textEl.style.fontSize = '';  // reset to --content-font-size before each line
   textEl.style.transform = 'translateY(0)';
   blank.style.opacity = '0';
   container.classList.remove('hidden');
 
   requestAnimationFrame(() => {
+    // Shrink font until no word overflows the container width
+    if (textEl.scrollWidth > textEl.clientWidth) {
+      let size = parseFloat(getComputedStyle(textEl).fontSize);
+      while (size > 12 && textEl.scrollWidth > textEl.clientWidth) {
+        size -= 2;
+        textEl.style.fontSize = size + 'px';
+      }
+    }
+
     const containerH = container.clientHeight;
     const textH = textEl.offsetHeight;
     if (textH > containerH) {
-      // Text overflows — position top of text at top of container, then scroll to bottom
       const startY = (textH - containerH) / 2;
       textEl.style.transform = `translateY(${startY}px)`;
       setTimeout(() => startScrolling(textEl, startY), 500);
     }
-    // else: text fits — leave centered, no scroll
   });
 }
 
