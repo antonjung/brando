@@ -315,30 +315,33 @@ function triggerImport() {
 
 async function handleFile(file) {
   if (!file || file.type !== 'application/pdf') { toast('Please select a PDF file'); return; }
+  document.getElementById('pdf-input-global').value = '';
 
-  const nameInput    = document.getElementById('script-name');
-  const progress     = document.getElementById('import-progress');
-  const confirmBtn   = document.getElementById('btn-import-confirm');
+  const name = file.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ');
+  toast(`Importing "${name}"…`);
 
-  const autoName = file.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ');
-  nameInput.value = autoName;
-  state.importData.name = autoName;
-
-  progress.textContent = 'Loading PDF…';
-  progress.classList.remove('hidden');
-  confirmBtn.disabled = true;
-
-  showView('view-import');
-
+  let buf;
   try {
-    state.importData.arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: state.importData.arrayBuffer.slice(0) }).promise;
-    progress.textContent = `${pdf.numPages} page${pdf.numPages !== 1 ? 's' : ''} loaded`;
-    confirmBtn.disabled = false;
+    buf = await file.arrayBuffer();
   } catch (err) {
-    progress.textContent = 'Failed to read PDF — try another file.';
-    console.error(err);
+    toast('Failed to read PDF — try another file.'); return;
   }
+
+  const script = {
+    id: uid(), name,
+    splits: [], roles: ['THEM'], sections: null,
+    pageHeights: [], totalHeight: 0, renderScale: 1,
+    complete: false, createdAt: Date.now(),
+  };
+
+  await savePDF(script.id, buf);
+  state.scripts.unshift(script);
+  saveScripts();
+
+  state.currentScriptId = script.id;
+  showView('view-home');
+  renderHome();
+  toast(`"${name}" imported — tap Edit to start`);
 }
 
 async function createScript() {
@@ -464,6 +467,12 @@ async function renderEditor(scriptId) {
   pdfPages.appendChild(overlay);
 
   pdfLoading.classList.add('hidden');
+
+  // Auto-insert a split near the very top on first open
+  if (script.splits.length === 0 && script.totalHeight > 0) {
+    addSplit(scriptId, Math.min(80, script.totalHeight * 0.04));
+  }
+
   renderOverlay(scriptId);
 }
 
@@ -475,132 +484,119 @@ function renderOverlay(scriptId) {
   overlay.innerHTML = '';
   overlay.style.height = (script.totalHeight * editorZoom) + 'px';
 
-  const { meLabel, themLabel } = state.settings;
   const sorted = [...script.splits].sort((a, b) => a - b);
-  const boundaries = [0, ...sorted.map(f => f * script.totalHeight), script.totalHeight];
+  const boundaryFracs = [0, ...sorted, 1];
 
-  // Section regions
-  boundaries.forEach((top, i) => {
-    if (i >= boundaries.length - 1) return;
-    const bottom = boundaries[i + 1];
+  // ── Section tinted regions ──────────────────────────────────────────────
+  boundaryFracs.forEach((topFrac, i) => {
+    if (i >= boundaryFracs.length - 1) return;
     const role = script.roles[i] || 'THEM';
-
-    if (role === 'DELETED') return; // gone — no overlay, no pill, PDF shows through
-
+    if (role === 'DELETED') return;
     const region = document.createElement('div');
     region.className = `pdf-section ${role === 'ME' ? 'me' : 'them'}`;
-    region.style.top = (top * editorZoom) + 'px';
-    region.style.height = ((bottom - top) * editorZoom) + 'px';
-
-    const pill = document.createElement('div');
-    pill.className = 'section-pill';
-
-    [['ME', meLabel], ['THEM', themLabel]].forEach(([r, lbl]) => {
-      const btn = document.createElement('button');
-      btn.className = 'section-pill-btn' + (r === role ? ' active' : '');
-      btn.textContent = lbl;
-      btn.dataset.role = r;
-      btn.addEventListener('click', e => { e.stopPropagation(); setRoleWithCascade(scriptId, i, r); });
-      pill.appendChild(btn);
-    });
-
-    if (script.splits.length > 0) {
-      const delBtn = document.createElement('button');
-      delBtn.className = 'section-pill-btn pill-delete';
-      delBtn.innerHTML = icon('trash-2', 15);
-      delBtn.title = 'Delete section';
-      delBtn.addEventListener('click', e => { e.stopPropagation(); deleteSection(scriptId, i); });
-      pill.appendChild(delBtn);
-    }
-
-    region.appendChild(pill);
+    region.style.top = (topFrac * script.totalHeight * editorZoom) + 'px';
+    region.style.height = ((boundaryFracs[i + 1] - topFrac) * script.totalHeight * editorZoom) + 'px';
     overlay.appendChild(region);
   });
 
-  // Split lines — draggable up/down
+  // ── Fixed top line ──────────────────────────────────────────────────────
+  const topLine = document.createElement('div');
+  topLine.className = 'pdf-split-line pdf-split-line--fixed pdf-split-line--top';
+  topLine.style.top = '0px';
+  overlay.appendChild(topLine);
+
+  // ── User split lines (draggable, with scissors) ─────────────────────────
   sorted.forEach((fraction, sortedIdx) => {
+    const sectionIdx = sortedIdx + 1;
     const minFrac = sortedIdx > 0 ? sorted[sortedIdx - 1] + 0.002 : 0.001;
     const maxFrac = sortedIdx < sorted.length - 1 ? sorted[sortedIdx + 1] - 0.002 : 0.999;
-    const y = fraction * script.totalHeight * editorZoom;
 
     const line = document.createElement('div');
     line.className = 'pdf-split-line';
-    line.style.top = y + 'px';
+    line.style.top = (fraction * script.totalHeight * editorZoom) + 'px';
 
-    let dragging = false;
-    let didDrag = false;
-    let startClientY = 0;
-    let liveFraction = fraction;
-    let longPressTimer = null;
+    let dragging = false, didDrag = false, startClientY = 0, liveFraction = fraction, longPressTimer = null;
 
-    const startDrag = clientY => {
-      dragging = true; didDrag = false; startClientY = clientY; liveFraction = fraction;
-      line.classList.add('dragging');
-    };
-
-    const onMove = clientY => {
+    const startDrag = cy => { dragging = true; didDrag = false; startClientY = cy; liveFraction = fraction; line.classList.add('dragging'); };
+    const onMove = cy => {
       if (!dragging) return;
-      const deltaY = clientY - startClientY;
-      if (Math.abs(deltaY) > 3) didDrag = true;
-      liveFraction = Math.max(minFrac, Math.min(maxFrac,
-        fraction + deltaY / (script.totalHeight * editorZoom)));
+      const d = cy - startClientY;
+      if (Math.abs(d) > 3) didDrag = true;
+      liveFraction = Math.max(minFrac, Math.min(maxFrac, fraction + d / (script.totalHeight * editorZoom)));
       line.style.top = (liveFraction * script.totalHeight * editorZoom) + 'px';
     };
-
     const onEnd = () => {
       clearTimeout(longPressTimer);
       if (!dragging) return;
-      dragging = false;
-      line.classList.remove('dragging');
+      dragging = false; line.classList.remove('dragging');
       if (didDrag) {
         const idx = script.splits.findIndex(f => f === fraction);
         if (idx !== -1) script.splits[idx] = liveFraction;
-        saveScripts();
-        renderOverlay(scriptId);
+        saveScripts(); renderOverlay(scriptId);
       }
     };
 
-    // Touch: long-press (300ms) activates drag to avoid conflicting with scroll
-    line.addEventListener('touchstart', e => {
-      e.stopPropagation();
-      const touchY = e.touches[0].clientY;
-      longPressTimer = setTimeout(() => startDrag(touchY), 300);
-    }, { passive: true });
-
-    line.addEventListener('touchmove', e => {
-      if (!dragging) { clearTimeout(longPressTimer); return; }
-      e.preventDefault();
-      onMove(e.touches[0].clientY);
-    }, { passive: false });
-
+    line.addEventListener('touchstart', e => { e.stopPropagation(); const ty = e.touches[0].clientY; longPressTimer = setTimeout(() => startDrag(ty), 300); }, { passive: true });
+    line.addEventListener('touchmove', e => { if (!dragging) { clearTimeout(longPressTimer); return; } e.preventDefault(); onMove(e.touches[0].clientY); }, { passive: false });
     line.addEventListener('touchend', e => { e.stopPropagation(); onEnd(); });
     line.addEventListener('touchcancel', () => { clearTimeout(longPressTimer); onEnd(); });
-
-    // Mouse: drag immediately on mousedown
-    line.addEventListener('mousedown', e => {
-      e.stopPropagation();
-      startDrag(e.clientY);
-      const onMM = ev => onMove(ev.clientY);
-      const onMU = () => { document.removeEventListener('mousemove', onMM); document.removeEventListener('mouseup', onMU); onEnd(); };
-      document.addEventListener('mousemove', onMM);
-      document.addEventListener('mouseup', onMU);
-    });
-
+    line.addEventListener('mousedown', e => { e.stopPropagation(); startDrag(e.clientY); const mm = ev => onMove(ev.clientY); const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); onEnd(); }; document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu); });
     line.addEventListener('click', e => e.stopPropagation());
     line.addEventListener('contextmenu', e => e.preventDefault());
 
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'pdf-split-remove';
-    removeBtn.innerHTML = icon('x', 13);
-    removeBtn.title = 'Remove split';
-    removeBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      if (!didDrag) removeSplit(scriptId, fraction);
-    });
+    const btn = document.createElement('button');
+    btn.className = 'split-scissors-btn';
+    btn.innerHTML = icon('scissors', 15);
+    btn.addEventListener('click', e => { e.stopPropagation(); showLineMenu(btn, scriptId, sectionIdx); });
+    line.appendChild(btn);
 
-    line.appendChild(removeBtn);
     overlay.appendChild(line);
   });
+
+  // ── Fixed bottom line ───────────────────────────────────────────────────
+  const botLine = document.createElement('div');
+  botLine.className = 'pdf-split-line pdf-split-line--fixed pdf-split-line--bottom';
+  botLine.style.top = (script.totalHeight * editorZoom) + 'px';
+  overlay.appendChild(botLine);
+}
+
+function showLineMenu(anchor, scriptId, sectionIdx) {
+  document.querySelectorAll('.line-menu').forEach(m => m.remove());
+  const script = state.scripts.find(s => s.id === scriptId);
+  if (!script) return;
+  const role = script.roles[sectionIdx] || 'THEM';
+  const { meLabel, themLabel } = state.settings;
+
+  const menu = document.createElement('div');
+  menu.className = 'line-menu';
+  menu.innerHTML = `
+    <button class="line-menu-item${role === 'ME' ? ' active' : ''}" data-action="me">${esc(meLabel)}</button>
+    <button class="line-menu-item${role === 'THEM' ? ' active' : ''}" data-action="them">${esc(themLabel)}</button>
+    <div class="line-menu-sep"></div>
+    <button class="line-menu-item line-menu-cut" data-action="delete">${icon('scissors', 13)} Cut section</button>`;
+
+  const r = anchor.getBoundingClientRect();
+  const menuW = 140, menuH = 132;
+  let left = r.right - menuW;
+  let top = r.bottom + 6;
+  if (left < 4) left = 4;
+  if (top + menuH > window.innerHeight - 8) top = r.top - menuH - 6;
+  menu.style.left = left + 'px';
+  menu.style.top = top + 'px';
+  document.body.appendChild(menu);
+
+  menu.addEventListener('click', e => {
+    const item = e.target.closest('[data-action]');
+    if (!item) return;
+    menu.remove();
+    const action = item.dataset.action;
+    if (action === 'me') setRoleWithCascade(scriptId, sectionIdx, 'ME');
+    else if (action === 'them') setRoleWithCascade(scriptId, sectionIdx, 'THEM');
+    else if (action === 'delete') deleteSection(scriptId, sectionIdx);
+  });
+
+  const dismiss = e => { if (!menu.contains(e.target)) menu.remove(); };
+  setTimeout(() => document.addEventListener('click', dismiss, { once: true }), 10);
 }
 
 function addSplit(scriptId, yPixels) {
@@ -662,11 +658,25 @@ function setRoleWithCascade(scriptId, sectionIndex, role) {
   renderOverlay(scriptId);
 }
 
-// Delete section — excluded from script output, invisible in editor, gone for good
+// Delete section — remove its bounding split and role; it is gone entirely
 function deleteSection(scriptId, sectionIndex) {
   const script = state.scripts.find(s => s.id === scriptId);
-  if (!script) return;
-  script.roles[sectionIndex] = 'DELETED';
+  if (!script || script.splits.length === 0) return;
+
+  const sorted = [...script.splits].sort((a, b) => a - b);
+
+  let splitToRemove;
+  if (sectionIndex === 0) {
+    // First section: remove the split below it; next section becomes new first
+    splitToRemove = sorted[0];
+    script.roles.splice(0, 1);
+  } else {
+    // Any other section: remove the split above it; it collapses into the section before
+    splitToRemove = sorted[sectionIndex - 1];
+    script.roles.splice(sectionIndex, 1);
+  }
+
+  script.splits = script.splits.filter(f => f !== splitToRemove);
   saveScripts();
   renderOverlay(scriptId);
 }

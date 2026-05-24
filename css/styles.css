@@ -1175,92 +1175,78 @@ html, body {
 }
 
 
-/* Role pill (ME / THEM / 🗑) */
-.section-pill {
+/* ── Scissors button on split lines ──────── */
+.split-scissors-btn {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
   display: flex;
-  gap: 4px;
-  pointer-events: all;
-  z-index: 20;
-}
-
-.section-pill-btn {
-  padding: 5px 11px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  border: 2px solid transparent;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.65);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.85);
   cursor: pointer;
-  background: rgba(0,0,0,0.55);
-  color: rgba(255,255,255,0.45);
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  pointer-events: all;
   backdrop-filter: blur(4px);
+  transition: background 0.15s;
+  -webkit-touch-callout: none;
+}
+.split-scissors-btn:active { background: rgba(255,255,255,0.15); }
+.split-scissors-btn svg { display: block; }
+
+/* ── Line context menu ────────────────────── */
+.line-menu {
+  position: fixed;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.55);
+  z-index: 500;
+  min-width: 140px;
+  overflow: hidden;
 }
 
-.section-pill-btn.active {
-  color: #fff;
-  background: rgba(0,0,0,0.75);
-}
-
-.pdf-section.me   .section-pill-btn[data-role="ME"].active   { border-color: rgba(100,220,100,0.9); color: #7fff7f; }
-.pdf-section.them .section-pill-btn[data-role="THEM"].active  { border-color: rgba(220,100,100,0.9); color: #ffaaaa; }
-
-/* Deleted / excluded section — transparent so PDF shows through */
-.pdf-section.deleted {
-  background: transparent;
-  border-color: transparent;
-}
-
-/* Inline delete confirm */
-.section-pill.section-pill--confirm,
-.section-pill:has(.pill-confirm-yes) {
-  background: rgba(0,0,0,0.75);
-  border-radius: 24px;
-  padding: 4px 6px;
-  backdrop-filter: blur(6px);
-}
-
-.pill-confirm-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: #fff;
-  padding: 0 4px;
-}
-
-.pill-excluded-label {
-  font-size: 11px;
+.line-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 13px 16px;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 15px;
   font-weight: 600;
-  color: rgba(255,255,255,0.5);
-  padding: 0 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
 }
+.line-menu-item:active { background: var(--surface2); }
+.line-menu-item.active { color: var(--accent2); }
+.line-menu-item.line-menu-cut { color: var(--danger); }
+.line-menu-item svg { flex-shrink: 0; }
 
-.pill-confirm-yes {
-  background: #c0392b !important;
-  color: #fff !important;
-  border-color: #c0392b !important;
-  opacity: 1 !important;
-}
+.line-menu-sep { height: 1px; background: var(--border); }
 
-.pill-confirm-no {
-  background: rgba(255,255,255,0.15) !important;
-  color: #fff !important;
-  border-color: transparent !important;
-  opacity: 1 !important;
+/* ── Fixed top / bottom lines ────────────── */
+.pdf-split-line--fixed {
+  transform: none;
+  height: 6px;
+  cursor: default;
+  pointer-events: none;
 }
-
-.pill-delete {
-  border-color: rgba(220, 60, 60, 0.6) !important;
-  color: #ff7070 !important;
-  background: rgba(180, 30, 30, 0.35) !important;
-  opacity: 1;
+.pdf-split-line--top  { top: 0 !important; }
+.pdf-split-line--bottom { }
+.pdf-split-line--fixed::after {
+  background: rgba(180, 180, 180, 0.6);
+  box-shadow: none;
+  height: 2px;
 }
-.pill-delete svg { stroke-width: 3; }
-.pill-delete:active { background: rgba(220, 60, 60, 0.6) !important; }
 
 /* Split line — tall hit area for dragging, stripe via pseudo-element */
 .pdf-split-line {
