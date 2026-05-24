@@ -1,6 +1,6 @@
 /* Brando – main application */
 
-// ── Config ──────────────────────────────────────────────────────────────────
+// ── Config ───────────────────────────────────────────────────────────────────
 const BASE_URL = (() => {
   const u = window.location.href.split('?')[0].replace(/\/+$/, '');
   return u.endsWith('index.html') ? u.slice(0, -10) : u + '/';
@@ -8,32 +8,17 @@ const BASE_URL = (() => {
 
 const APP_VERSION = window.APP_VERSION || '-';
 
-// ── Feather icon helper ───────────────────────────────────────────────────────
+// ── Feather icon helper ──────────────────────────────────────────────────────
 function icon(name, size = 16) {
   if (typeof feather === 'undefined') return '';
   return feather.toSvg(name, { width: size, height: size, 'stroke-width': 2 });
 }
 
-// ── Editor zoom & display compositing ────────────────────────────────────────
-let editorZoom = 1.0;
-let _pdfNaturalWidth = 0;
-let _pdfNaturalHeight = 0;
-let _pageCanvases = [];       // off-screen canvas per PDF page
-let _pageCssHeights = [];     // CSS px height per page
-let _displaySectionOffsets = []; // display-space CSS top of each section (null if DELETED)
-let _displayTotalHeight = 0;  // total CSS height of visible sections
-let _dpR = 1;                 // device pixel ratio used when rendering
-
 // ── State ────────────────────────────────────────────────────────────────────
 const state = {
   scripts: [],
   notes: [],
-  settings: {
-    scrollRate: 40,
-    theme: 'dark',
-    meLabel: 'ME',
-    themLabel: 'THEM',
-  },
+  settings: { scrollRate: 40, theme: 'dark', meLabel: 'ME', themLabel: 'THEM' },
   importData: { name: '', arrayBuffer: null },
   currentScriptId: null,
   peer: null,
@@ -44,36 +29,28 @@ const state = {
   swReg: null,
 };
 
-// ── Storage ───────────────────────────────────────────────────────────────────
-function saveScripts() {
-  localStorage.setItem('brando_scripts', JSON.stringify(state.scripts));
-}
+// ── Storage ──────────────────────────────────────────────────────────────────
+function saveScripts() { localStorage.setItem('brando_scripts', JSON.stringify(state.scripts)); }
 function loadScripts() {
   try { state.scripts = JSON.parse(localStorage.getItem('brando_scripts') || '[]'); }
   catch { state.scripts = []; }
 }
-function saveSettings() {
-  localStorage.setItem('brando_settings', JSON.stringify(state.settings));
-}
+function saveSettings() { localStorage.setItem('brando_settings', JSON.stringify(state.settings)); }
 function loadSettings() {
   try {
     const s = JSON.parse(localStorage.getItem('brando_settings') || 'null');
     if (s) Object.assign(state.settings, s);
   } catch {}
 }
-function saveNotes() {
-  localStorage.setItem('brando_notes', JSON.stringify(state.notes));
-}
+function saveNotes() { localStorage.setItem('brando_notes', JSON.stringify(state.notes)); }
 function loadNotes() {
   try { state.notes = JSON.parse(localStorage.getItem('brando_notes') || '[]'); }
   catch { state.notes = []; }
 }
 
-function uid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
-// ── IndexedDB (PDF storage) ───────────────────────────────────────────────────
+// ── IndexedDB (PDF storage) ──────────────────────────────────────────────────
 let _db = null;
 function openDB() {
   if (_db) return Promise.resolve(_db);
@@ -112,14 +89,14 @@ async function deletePDF(id) {
   });
 }
 
-// ── Navigation ────────────────────────────────────────────────────────────────
+// ── Navigation ───────────────────────────────────────────────────────────────
 function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
   closeAllPanels();
 }
 
-// ── Panels ────────────────────────────────────────────────────────────────────
+// ── Panels ───────────────────────────────────────────────────────────────────
 function openPanel(id) {
   closeAllPanels();
   document.getElementById(id).classList.add('open');
@@ -130,7 +107,7 @@ function closeAllPanels() {
   document.getElementById('overlay').classList.add('hidden');
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
+// ── Toast ────────────────────────────────────────────────────────────────────
 function toast(msg) {
   document.querySelectorAll('.toast').forEach(t => t.remove());
   const el = document.createElement('div');
@@ -140,7 +117,7 @@ function toast(msg) {
   setTimeout(() => el.remove(), 3200);
 }
 
-// ── Confirm Dialog ────────────────────────────────────────────────────────────
+// ── Confirm Dialog ───────────────────────────────────────────────────────────
 function showConfirm(title, msg) {
   return new Promise(resolve => {
     const overlay = document.createElement('div');
@@ -161,21 +138,20 @@ function showConfirm(title, msg) {
   });
 }
 
-// ── Theme ─────────────────────────────────────────────────────────────────────
+// ── Theme ────────────────────────────────────────────────────────────────────
 function applyTheme(theme) {
   document.body.setAttribute('data-theme', theme);
   document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === theme));
 }
 
-// ── Settings ──────────────────────────────────────────────────────────────────
+// ── Settings ─────────────────────────────────────────────────────────────────
 function renderSettings() {
-  const { scrollRate, theme, meLabel, themLabel } = state.settings;
-  const scrollEl = document.getElementById('setting-scroll');
-  scrollEl.value = scrollRate;
+  const { scrollRate, meLabel, themLabel } = state.settings;
+  document.getElementById('setting-scroll').value = scrollRate;
   document.getElementById('setting-scroll-val').textContent = `${scrollRate} px/s`;
   document.getElementById('setting-me').value = meLabel;
   document.getElementById('setting-them').value = themLabel;
-  applyTheme(theme);
+  applyTheme(state.settings.theme);
 }
 
 function initSettingsListeners() {
@@ -203,7 +179,7 @@ function initSettingsListeners() {
   });
 }
 
-// ── Home ──────────────────────────────────────────────────────────────────────
+// ── Home ─────────────────────────────────────────────────────────────────────
 function renderHome() {
   const list = document.getElementById('script-list');
   const empty = document.getElementById('empty-state');
@@ -224,15 +200,15 @@ function renderHome() {
 
   list.querySelectorAll('.script-card').forEach(card => {
     card.addEventListener('click', e => {
-      if (e.target.closest('[data-action="actions"]')) return;
+      if (e.target.closest('[data-action="delete"]')) return;
       selectScript(card.dataset.id);
     });
   });
 
-  list.querySelectorAll('[data-action="actions"]').forEach(btn => {
+  list.querySelectorAll('[data-action="delete"]').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      showCardMenu(btn, btn.closest('.script-card').dataset.id);
+      handleScriptDelete(btn.closest('.script-card').dataset.id);
     });
   });
 
@@ -261,12 +237,12 @@ function updateFooter() {
 
   const meLabel   = document.getElementById('footer-me-label');
   const themLabel = document.getElementById('footer-them-label');
-  if (meLabel)   meLabel.textContent   = state.settings.meLabel;
+  if (meLabel)   meLabel.textContent = state.settings.meLabel;
   if (themLabel) themLabel.textContent = state.settings.themLabel;
 }
 
 function scriptCard(s) {
-  const sectionCount = s.complete && s.sections ? s.sections.length : (s.splits ? s.splits.length + 1 : 1);
+  const lineCount = s.lines ? s.lines.length : 0;
   const statusLabel = s.complete ? 'Ready' : 'Draft';
   const statusClass = s.complete ? 'complete' : 'draft';
   const selected = state.currentScriptId === s.id;
@@ -274,58 +250,27 @@ function scriptCard(s) {
   return `
     <div class="script-card${selected ? ' selected' : ''}" data-id="${s.id}">
       <div class="script-card-header">
-        <div>
+        <div class="script-card-info">
           <div class="script-card-title">${esc(s.name)}</div>
-          <div class="script-card-meta">${sectionCount} section${sectionCount !== 1 ? 's' : ''}</div>
+          <div class="script-card-meta">${lineCount > 0 ? `${lineCount} line${lineCount !== 1 ? 's' : ''}` : 'tap Edit to set up'}</div>
         </div>
         <span class="script-status ${statusClass}">${statusLabel}</span>
-      </div>
-      <div class="script-card-actions">
-        <button class="script-action-btn" data-action="actions">${icon('chevron-down',15)}</button>
+        <button class="script-trash-btn" data-action="delete" title="Delete">${icon('trash-2', 16)}</button>
       </div>
     </div>`;
 }
 
-function showCardMenu(anchor, scriptId) {
-  document.querySelectorAll('.line-menu').forEach(m => m.remove());
-  const menu = document.createElement('div');
-  menu.className = 'line-menu';
-  menu.innerHTML = `<button class="line-menu-item line-menu-cut" data-action="delete">${icon('trash-2', 13)} Delete script</button>`;
-
-  const r = anchor.getBoundingClientRect();
-  const menuW = 160, menuH = 46;
-  let left = r.right - menuW;
-  let top  = r.top - menuH - 6;
-  if (left < 4) left = 4;
-  if (top  < 4) top  = r.bottom + 6;
-  menu.style.left = left + 'px';
-  menu.style.top  = top  + 'px';
-  document.body.appendChild(menu);
-
-  menu.addEventListener('click', e => {
-    const item = e.target.closest('[data-action]');
-    if (!item) return;
-    menu.remove();
-    if (item.dataset.action === 'delete') handleScriptAction('delete', scriptId);
-  });
-  setTimeout(() => document.addEventListener('click', e => { if (!menu.contains(e.target)) menu.remove(); }, { once: true }), 10);
-}
-
-async function handleScriptAction(action, id) {
+async function handleScriptDelete(id) {
   const script = state.scripts.find(s => s.id === id);
   if (!script) return;
-
-  if (action === 'delete') {
-    const ok = await showConfirm('Delete script', `Delete "${script.name}"? This cannot be undone.`);
-    if (ok) {
-      await deletePDF(id).catch(() => {});
-      state.scripts = state.scripts.filter(s => s.id !== id);
-      if (state.currentScriptId === id) state.currentScriptId = null;
-      saveScripts();
-      renderHome();
-      toast('Script deleted');
-    }
-  }
+  const ok = await showConfirm('Delete script', `Delete "${script.name}"? This cannot be undone.`);
+  if (!ok) return;
+  await deletePDF(id).catch(() => {});
+  state.scripts = state.scripts.filter(s => s.id !== id);
+  if (state.currentScriptId === id) state.currentScriptId = null;
+  saveScripts();
+  renderHome();
+  toast('Script deleted');
 }
 
 function esc(str) {
@@ -334,10 +279,6 @@ function esc(str) {
 
 // ── PDF Import ────────────────────────────────────────────────────────────────
 function triggerImport() {
-  state.importData = { name: '', arrayBuffer: null };
-  document.getElementById('script-name').value = '';
-  document.getElementById('import-progress').classList.add('hidden');
-  document.getElementById('btn-import-confirm').disabled = true;
   const inp = document.getElementById('pdf-input-global');
   inp.value = '';
   inp.click();
@@ -351,16 +292,15 @@ async function handleFile(file) {
   toast(`Importing "${name}"…`);
 
   let buf;
-  try {
-    buf = await file.arrayBuffer();
-  } catch (err) {
-    toast('Failed to read PDF — try another file.'); return;
-  }
+  try { buf = await file.arrayBuffer(); }
+  catch { toast('Failed to read PDF — try another file.'); return; }
+
+  let lines = [];
+  try { lines = await extractLines(buf); }
+  catch (err) { console.warn('extractLines failed:', err); }
 
   const script = {
-    id: uid(), name,
-    splits: [], roles: ['THEM'], sections: null,
-    pageHeights: [], totalHeight: 0, renderScale: 1,
+    id: uid(), name, lines, sections: null,
     complete: false, createdAt: Date.now(),
   };
 
@@ -371,513 +311,99 @@ async function handleFile(file) {
   state.currentScriptId = script.id;
   showView('view-home');
   renderHome();
-  toast(`"${name}" imported — tap Edit to start`);
+  toast(lines.length ? `"${name}" — ${lines.length} lines found` : `"${name}" imported`);
 }
 
-async function createScript() {
-  const nameInput = document.getElementById('script-name');
-  const name = nameInput.value.trim() || state.importData.name || 'Untitled';
-  if (!state.importData.arrayBuffer) { toast('Select a PDF first'); return; }
-
-  const script = {
-    id: uid(),
-    name,
-    splits: [],          // Y fractions (0–1) of total rendered height
-    roles: ['THEM'],     // role per section
-    sections: null,      // [{role, text}] — filled on completion
-    pageHeights: [],     // rendered CSS px height per page
-    totalHeight: 0,
-    renderScale: 1,
-    complete: false,
-    createdAt: Date.now(),
-  };
-
-  await savePDF(script.id, state.importData.arrayBuffer);
-  state.scripts.unshift(script);
-  saveScripts();
-  state.importData = { name: '', arrayBuffer: null };
-
-  state.currentScriptId = script.id;
-  showView('view-home');
-  renderHome();
-  toast('Script created — tap Edit to start splitting');
-}
-
-
-// ── PDF Editor ────────────────────────────────────────────────────────────────
-async function renderEditor(scriptId) {
-  const script = state.scripts.find(s => s.id === scriptId);
-  if (!script) return;
-
-  document.getElementById('editor-title').textContent = script.name;
-
-  // Reset zoom & display state
-  editorZoom = 1.0;
-  _pdfNaturalWidth = 0;
-  _pdfNaturalHeight = 0;
-  _pageCanvases = [];
-  _pageCssHeights = [];
-  _displaySectionOffsets = [];
-  _displayTotalHeight = 0;
-  document.getElementById('zoom-slider').value = 100;
-  document.getElementById('zoom-val').textContent = '100%';
-
-  const pdfPages = document.getElementById('pdf-pages');
-  const pdfLoading = document.getElementById('pdf-loading');
-  pdfPages.innerHTML = '';
-  pdfPages.style.width = '';
-  pdfLoading.classList.remove('hidden');
-
-  let pdfData;
-  try {
-    pdfData = await loadPDF(scriptId);
-  } catch {
-    pdfLoading.textContent = 'Could not load PDF — please re-import.';
-    return;
-  }
-
-  if (!pdfData) {
-    pdfLoading.textContent = 'PDF not found — please re-import.';
-    return;
-  }
-
+// ── PDF Text Extraction ───────────────────────────────────────────────────────
+async function extractLines(pdfData) {
   pdfjsLib.GlobalWorkerOptions.workerSrc =
     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
   const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-
-  // Wait one frame so pdf-pages has a measured width
-  await new Promise(r => requestAnimationFrame(r));
-  const containerWidth = pdfPages.clientWidth || window.innerWidth;
-  _dpR = Math.min(window.devicePixelRatio || 1, 2);
-
-  // Scale is based on the first page width → all pages use same scale
-  const firstPage = await pdf.getPage(1);
-  const baseViewport = firstPage.getViewport({ scale: 1 });
-  const scale = containerWidth / baseViewport.width;
-
-  script.pageHeights = [];
-  script.totalHeight = 0;
-  script.renderScale = scale;
-
-  // Canvas layer is what gets scaled — pills and split buttons live outside it
-  const canvasLayer = document.createElement('div');
-  canvasLayer.id = 'pdf-canvas-layer';
-  canvasLayer.style.transformOrigin = 'top left';
-  pdfPages.appendChild(canvasLayer);
+  const allItems = [];
 
   for (let pn = 1; pn <= pdf.numPages; pn++) {
     const page = await pdf.getPage(pn);
-    const viewport = page.getViewport({ scale });
-
-    const cssW = viewport.width;    // = containerWidth
-    const cssH = viewport.height;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(cssW * _dpR);
-    canvas.height = Math.round(cssH * _dpR);
-    canvas.style.width = cssW + 'px';
-    canvas.style.height = cssH + 'px';
-    canvas.style.display = 'block';
-    // Render off-screen — rebuildDisplay composites into canvasLayer
-    const ctx = canvas.getContext('2d');
-    ctx.scale(_dpR, _dpR);
-    await page.render({ canvasContext: ctx, viewport }).promise;
-
-    _pageCanvases.push(canvas);
-    _pageCssHeights.push(cssH);
-    script.pageHeights.push(cssH);
-    script.totalHeight += cssH;
-  }
-
-  _pdfNaturalWidth = containerWidth;
-  pdfPages.style.width = containerWidth + 'px';
-  saveScripts();
-
-  // Overlay sits alongside the canvas layer — not inside it, so it doesn't scale
-  const overlay = document.createElement('div');
-  overlay.id = 'pdf-overlay';
-  overlay.className = 'pdf-overlay';
-  pdfPages.appendChild(overlay);
-
-  pdfLoading.classList.add('hidden');
-
-  if (script.splits.length === 0 && script.totalHeight > 0) {
-    addSplit(scriptId, Math.min(80, script.totalHeight * 0.04)); // calls rebuildDisplay internally
-  } else {
-    rebuildDisplay(scriptId);
-  }
-}
-
-// Composite visible (non-DELETED) sections into canvasLayer from off-screen page canvases.
-// Updates _displaySectionOffsets and _displayTotalHeight, then calls renderOverlay.
-function rebuildDisplay(scriptId) {
-  const script = state.scripts.find(s => s.id === scriptId);
-  const canvasLayer = document.getElementById('pdf-canvas-layer');
-  if (!canvasLayer || !script || !script.totalHeight || !_pageCanvases.length) return;
-
-  canvasLayer.innerHTML = '';
-  _displaySectionOffsets = new Array(script.roles.length).fill(null);
-  _displayTotalHeight = 0;
-
-  const sorted = [...script.splits].sort((a, b) => a - b);
-  const boundaryFracs = [0, ...sorted, 1];
-
-  // Top offset in CSS px for each page
-  const pageOffsets = [];
-  let cumH = 0;
-  for (const h of _pageCssHeights) { pageOffsets.push(cumH); cumH += h; }
-
-  const canvasW = _pageCanvases[0].width; // device px (same for all pages)
-  const cssW = canvasW / _dpR;
-
-  for (let i = 0; i < boundaryFracs.length - 1; i++) {
-    const role = script.roles[i] || 'THEM';
-    if (role === 'DELETED') continue;
-
-    const topPx    = boundaryFracs[i]     * script.totalHeight;
-    const bottomPx = boundaryFracs[i + 1] * script.totalHeight;
-    const sectionH = bottomPx - topPx;
-    if (sectionH <= 0) continue;
-
-    _displaySectionOffsets[i] = _displayTotalHeight;
-    _displayTotalHeight += sectionH;
-
-    // Composite section pixels from source page canvases
-    const canvas = document.createElement('canvas');
-    canvas.width  = canvasW;
-    canvas.height = Math.round(sectionH * _dpR);
-    canvas.style.width  = cssW + 'px';
-    canvas.style.height = sectionH + 'px';
-    canvas.style.display = 'block';
-
-    const ctx = canvas.getContext('2d');
-    for (let pn = 0; pn < _pageCanvases.length; pn++) {
-      const pageTop    = pageOffsets[pn];
-      const pageBottom = pageTop + _pageCssHeights[pn];
-      if (pageBottom <= topPx || pageTop >= bottomPx) continue;
-
-      const overlapTop    = Math.max(topPx, pageTop);
-      const overlapBottom = Math.min(bottomPx, pageBottom);
-      const srcY = Math.round((overlapTop - pageTop)  * _dpR);
-      const srcH = Math.round((overlapBottom - overlapTop) * _dpR);
-      const dstY = Math.round((overlapTop - topPx) * _dpR);
-      ctx.drawImage(_pageCanvases[pn], 0, srcY, canvasW, srcH, 0, dstY, canvasW, srcH);
-    }
-    canvasLayer.appendChild(canvas);
-  }
-
-  _pdfNaturalHeight = _displayTotalHeight;
-
-  // Keep canvas layer zoom in sync
-  if (_pdfNaturalWidth) {
-    canvasLayer.style.transform   = editorZoom !== 1 ? `scale(${editorZoom})` : '';
-    canvasLayer.style.marginRight  = `${Math.max(0, _pdfNaturalWidth  * (editorZoom - 1))}px`;
-    canvasLayer.style.marginBottom = `${Math.max(0, _pdfNaturalHeight * (editorZoom - 1))}px`;
-    const pp = document.getElementById('pdf-pages');
-    if (pp) pp.style.width = (_pdfNaturalWidth * Math.max(1, editorZoom)) + 'px';
-  }
-
-  renderOverlay(scriptId);
-}
-
-// Map a Y position in display space (cut sections removed) back to PDF space.
-function displayYToPdfY(displayY, scriptId) {
-  const script = state.scripts.find(s => s.id === scriptId);
-  if (!script || !script.totalHeight || !_displaySectionOffsets.length) return displayY;
-
-  const sorted = [...script.splits].sort((a, b) => a - b);
-  const boundaryFracs = [0, ...sorted, 1];
-
-  for (let i = 0; i < boundaryFracs.length - 1; i++) {
-    const dispTop = _displaySectionOffsets[i];
-    if (dispTop === null) continue;
-    const sectionH = (boundaryFracs[i + 1] - boundaryFracs[i]) * script.totalHeight;
-    if (displayY >= dispTop && displayY < dispTop + sectionH) {
-      return boundaryFracs[i] * script.totalHeight + (displayY - dispTop);
-    }
-  }
-  return script.totalHeight;
-}
-
-function renderOverlay(scriptId) {
-  const script = state.scripts.find(s => s.id === scriptId);
-  const overlay = document.getElementById('pdf-overlay');
-  if (!overlay || !script || !script.totalHeight) return;
-
-  overlay.innerHTML = '';
-  overlay.style.height = (_displayTotalHeight * editorZoom) + 'px';
-
-  const sorted = [...script.splits].sort((a, b) => a - b);
-  const boundaryFracs = [0, ...sorted, 1];
-
-  // Lines adjacent to a DELETED section are not shown
-  const hiddenFracs = new Set();
-  sorted.forEach((frac, idx) => {
-    if ((script.roles[idx] || 'THEM') === 'DELETED' ||
-        (script.roles[idx + 1] || 'THEM') === 'DELETED') {
-      hiddenFracs.add(frac);
-    }
-  });
-
-  // ── Section tint regions ─────────────────────────────────────────────────
-  boundaryFracs.forEach((topFrac, i) => {
-    if (i >= boundaryFracs.length - 1) return;
-    const role = script.roles[i] || 'THEM';
-    if (role === 'DELETED') return; // no display space for cut sections
-    const displayTop = _displaySectionOffsets[i];
-    if (displayTop === null) return;
-    const sectionH = (boundaryFracs[i + 1] - topFrac) * script.totalHeight;
-    const region = document.createElement('div');
-    region.className = `pdf-section ${role === 'ME' ? 'me' : 'them'}`;
-    region.style.top    = (displayTop * editorZoom) + 'px';
-    region.style.height = (sectionH  * editorZoom) + 'px';
-    overlay.appendChild(region);
-  });
-
-  // ── Fixed top line ──────────────────────────────────────────────────────
-  const topLine = document.createElement('div');
-  topLine.className = 'pdf-split-line pdf-split-line--fixed pdf-split-line--top';
-  topLine.style.top = '0px';
-  overlay.appendChild(topLine);
-
-  // ── User split lines ────────────────────────────────────────────────────
-  sorted.forEach((fraction, sortedIdx) => {
-    if (hiddenFracs.has(fraction)) return;
-    const sectionIdx = sortedIdx + 1; // section below this line
-    const displayTop = _displaySectionOffsets[sectionIdx];
-    if (displayTop === null) return;
-
-    const minFrac = sortedIdx > 0 ? sorted[sortedIdx - 1] + 0.002 : 0.001;
-    const maxFrac = sortedIdx < sorted.length - 1 ? sorted[sortedIdx + 1] - 0.002 : 0.999;
-
-    const line = document.createElement('div');
-    line.className = 'pdf-split-line';
-    line.style.top = (displayTop * editorZoom) + 'px';
-
-    let dragging = false, didDrag = false, startClientY = 0, liveFraction = fraction, longPressTimer = null;
-    const startDisplayTop = displayTop; // display Y at drag start
-
-    const startDrag = cy => { dragging = true; didDrag = false; startClientY = cy; liveFraction = fraction; line.classList.add('dragging'); };
-    const onMove = cy => {
-      if (!dragging) return;
-      const d = cy - startClientY;
-      if (Math.abs(d) > 3) didDrag = true;
-      const deltaDisp = d / editorZoom; // delta in CSS px — same in display and PDF space for non-DELETED sections
-      liveFraction = Math.max(minFrac, Math.min(maxFrac, fraction + deltaDisp / script.totalHeight));
-      line.style.top = ((startDisplayTop + deltaDisp) * editorZoom) + 'px';
-    };
-    const onEnd = () => {
-      clearTimeout(longPressTimer);
-      if (!dragging) return;
-      dragging = false; line.classList.remove('dragging');
-      if (didDrag) {
-        const idx = script.splits.findIndex(f => f === fraction);
-        if (idx !== -1) script.splits[idx] = liveFraction;
-        saveScripts(); rebuildDisplay(scriptId);
-      }
-    };
-
-    line.addEventListener('touchstart', e => { e.stopPropagation(); const ty = e.touches[0].clientY; longPressTimer = setTimeout(() => startDrag(ty), 300); }, { passive: true });
-    line.addEventListener('touchmove', e => { if (!dragging) { clearTimeout(longPressTimer); return; } e.preventDefault(); onMove(e.touches[0].clientY); }, { passive: false });
-    line.addEventListener('touchend', e => { e.stopPropagation(); onEnd(); });
-    line.addEventListener('touchcancel', () => { clearTimeout(longPressTimer); onEnd(); });
-    line.addEventListener('mousedown', e => { e.stopPropagation(); startDrag(e.clientY); const mm = ev => onMove(ev.clientY); const mu = () => { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); onEnd(); }; document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu); });
-    line.addEventListener('click', e => e.stopPropagation());
-    line.addEventListener('contextmenu', e => e.preventDefault());
-
-    if ((script.roles[sectionIdx] || 'THEM') !== 'DELETED') {
-      const btn = document.createElement('button');
-      btn.className = 'split-scissors-btn';
-      btn.innerHTML = icon('scissors', 15);
-      btn.addEventListener('click', e => { e.stopPropagation(); showLineMenu(btn, scriptId, sectionIdx); });
-      line.appendChild(btn);
-    }
-
-    overlay.appendChild(line);
-  });
-
-  // ── Fixed bottom line ───────────────────────────────────────────────────
-  const botLine = document.createElement('div');
-  botLine.className = 'pdf-split-line pdf-split-line--fixed pdf-split-line--bottom';
-  botLine.style.top = (_displayTotalHeight * editorZoom) + 'px';
-  overlay.appendChild(botLine);
-}
-
-function showLineMenu(anchor, scriptId, sectionIdx) {
-  document.querySelectorAll('.line-menu').forEach(m => m.remove());
-  const script = state.scripts.find(s => s.id === scriptId);
-  if (!script) return;
-  const role = script.roles[sectionIdx] || 'THEM';
-  const { meLabel, themLabel } = state.settings;
-
-  const menu = document.createElement('div');
-  menu.className = 'line-menu';
-  menu.innerHTML = `
-    <button class="line-menu-item${role === 'ME' ? ' active' : ''}" data-action="me">${esc(meLabel)}</button>
-    <button class="line-menu-item${role === 'THEM' ? ' active' : ''}" data-action="them">${esc(themLabel)}</button>
-    <div class="line-menu-sep"></div>
-    <button class="line-menu-item line-menu-cut" data-action="delete">${icon('scissors', 13)} Cut section</button>`;
-
-  const r = anchor.getBoundingClientRect();
-  const menuW = 140, menuH = 132;
-  let left = r.right - menuW;
-  let top = r.bottom + 6;
-  if (left < 4) left = 4;
-  if (top + menuH > window.innerHeight - 8) top = r.top - menuH - 6;
-  menu.style.left = left + 'px';
-  menu.style.top = top + 'px';
-  document.body.appendChild(menu);
-
-  menu.addEventListener('click', e => {
-    const item = e.target.closest('[data-action]');
-    if (!item) return;
-    menu.remove();
-    const action = item.dataset.action;
-    if (action === 'me') setRoleWithCascade(scriptId, sectionIdx, 'ME');
-    else if (action === 'them') setRoleWithCascade(scriptId, sectionIdx, 'THEM');
-    else if (action === 'delete') deleteSection(scriptId, sectionIdx);
-  });
-
-  const dismiss = e => { if (!menu.contains(e.target)) menu.remove(); };
-  setTimeout(() => document.addEventListener('click', dismiss, { once: true }), 10);
-}
-
-function addSplit(scriptId, yPixels) {
-  const script = state.scripts.find(s => s.id === scriptId);
-  if (!script || !script.totalHeight) return;
-
-  const MIN_PX = 2;
-  if (yPixels < MIN_PX || yPixels > script.totalHeight - MIN_PX) return;
-
-  const fraction = yPixels / script.totalHeight;
-
-  // Only block exact duplicate splits
-  const sorted = [...script.splits].sort((a, b) => a - b);
-  const tooClose = sorted.some(f => Math.abs((f - fraction) * script.totalHeight) < MIN_PX);
-  if (tooClose) return;
-
-  // Find section index where this split falls
-  const sectionIdx = sorted.findIndex(f => fraction < f);
-  const insertAt = sectionIdx === -1 ? sorted.length : sectionIdx;
-
-  script.splits.push(fraction);
-  script.splits.sort((a, b) => a - b);
-
-  // New section gets opposite role to the one it splits
-  const currentRole = script.roles[insertAt] || 'THEM';
-  script.roles.splice(insertAt + 1, 0, currentRole === 'ME' ? 'THEM' : 'ME');
-
-  saveScripts();
-  rebuildDisplay(scriptId);
-}
-
-function removeSplit(scriptId, fraction) {
-  const script = state.scripts.find(s => s.id === scriptId);
-  if (!script) return;
-
-  const sorted = [...script.splits].sort((a, b) => a - b);
-  const idx = sorted.indexOf(fraction);
-  if (idx === -1) return;
-
-  script.splits = script.splits.filter(f => f !== fraction);
-  script.roles.splice(idx + 1, 1);
-
-  saveScripts();
-  rebuildDisplay(scriptId);
-}
-
-// Set a role and cascade alternating ME/THEM to subsequent sections
-function setRoleWithCascade(scriptId, sectionIndex, role) {
-  const script = state.scripts.find(s => s.id === scriptId);
-  if (!script) return;
-  script.roles[sectionIndex] = role;
-  let current = role;
-  for (let i = sectionIndex + 1; i < script.roles.length; i++) {
-    if (script.roles[i] === 'DELETED') continue;
-    current = current === 'ME' ? 'THEM' : 'ME';
-    script.roles[i] = current;
-  }
-  saveScripts();
-  renderOverlay(scriptId);
-}
-
-// Cut section — mark as excluded; covered with solid block everywhere, skipped in output
-function deleteSection(scriptId, sectionIndex) {
-  const script = state.scripts.find(s => s.id === scriptId);
-  if (!script) return;
-  script.roles[sectionIndex] = 'DELETED';
-  saveScripts();
-  rebuildDisplay(scriptId);
-}
-
-// Extract text from PDF per section (called at completion)
-async function extractSectionTexts(scriptId) {
-  const script = state.scripts.find(s => s.id === scriptId);
-  if (!script) return;
-
-  const pdfData = await loadPDF(scriptId);
-  if (!pdfData) { toast('PDF not found — cannot extract text'); return; }
-
-  const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-  const scale = script.renderScale;
-  const totalH = script.totalHeight;
-
-  // Collect all text items with absolute Y position in rendered space
-  const items = [];
-  let pageOffset = 0;
-
-  for (let pn = 1; pn <= pdf.numPages; pn++) {
-    const page = await pdf.getPage(pn);
-    const viewport = page.getViewport({ scale });
+    const viewport = page.getViewport({ scale: 1 });
     const content = await page.getTextContent();
 
     for (const item of content.items) {
       if (!item.str.trim()) continue;
       const [vx, vy] = viewport.convertToViewportPoint(item.transform[4], item.transform[5]);
-      items.push({ str: item.str, x: vx, y: pageOffset + vy });
+      // Offset by page index so pages never merge
+      allItems.push({ str: item.str.trim(), x: vx, y: pn * 10000 + vy });
     }
-
-    pageOffset += script.pageHeights[pn - 1] || 0;
   }
 
-  items.sort((a, b) => a.y - b.y || a.x - b.x);
+  allItems.sort((a, b) => a.y - b.y || a.x - b.x);
 
-  const sorted = [...script.splits].sort((a, b) => a - b);
-  const boundaries = [0, ...sorted.map(f => f * totalH), totalH];
+  const textLines = [];
+  let lineItems = [];
+  let prevY = null;
 
-  script.sections = [];
-  for (let i = 0; i < boundaries.length - 1; i++) {
-    const top = boundaries[i];
-    const bottom = boundaries[i + 1];
-    const sectionItems = items.filter(t => t.y >= top && t.y < bottom);
-
-    // Group into lines by proximity
-    const lines = [];
-    let prevY = null;
-    let line = [];
-
-    for (const item of sectionItems) {
-      if (prevY !== null && Math.abs(item.y - prevY) > 10) {
-        if (line.length) lines.push(line.join(' '));
-        line = [];
-      }
-      line.push(item.str);
-      prevY = item.y;
+  for (const item of allItems) {
+    if (prevY !== null && Math.abs(item.y - prevY) > 4) {
+      if (lineItems.length) textLines.push({ text: lineItems.join(' '), role: 'THEM' });
+      lineItems = [];
     }
-    if (line.length) lines.push(line.join(' '));
-
-    const role = script.roles[i] || 'THEM';
-    if (role === 'DELETED') continue;
-    script.sections.push({ role, text: lines.join('\n') });
+    lineItems.push(item.str);
+    prevY = item.y;
   }
+  if (lineItems.length) textLines.push({ text: lineItems.join(' '), role: 'THEM' });
+
+  return textLines;
 }
 
-// ── getSections (used by audition & reader) ───────────────────────────────────
+// ── Line Editor ───────────────────────────────────────────────────────────────
+async function renderEditor(scriptId) {
+  const script = state.scripts.find(s => s.id === scriptId);
+  if (!script) return;
+  document.getElementById('editor-title').textContent = script.name;
+
+  const loading = document.getElementById('line-loading');
+  const lineList = document.getElementById('line-list');
+  document.getElementById('select-all-lines').checked = false;
+  document.getElementById('line-role-select').value = '';
+
+  if (!script.lines) {
+    loading.textContent = 'Extracting lines from PDF…';
+    loading.classList.remove('hidden');
+    lineList.innerHTML = '';
+    try {
+      const pdfData = await loadPDF(scriptId);
+      if (!pdfData) { loading.textContent = 'PDF not found — please re-import.'; return; }
+      script.lines = await extractLines(pdfData);
+      saveScripts();
+    } catch {
+      loading.textContent = 'Could not extract text from PDF.';
+      return;
+    }
+  }
+
+  loading.classList.add('hidden');
+  renderLineList(scriptId);
+}
+
+function renderLineList(scriptId) {
+  const script = state.scripts.find(s => s.id === scriptId);
+  const lineList = document.getElementById('line-list');
+  if (!script || !script.lines) return;
+
+  lineList.innerHTML = script.lines.map((line, i) => {
+    const rc = line.role === 'ME' ? 'me' : line.role === 'CUT' ? 'cut' : 'them';
+    return `
+      <div class="line-row ${rc}" data-index="${i}">
+        <input type="checkbox" class="line-check" data-index="${i}">
+        <span class="line-text">${esc(line.text)}</span>
+        <span class="line-role-badge ${rc}">${line.role}</span>
+      </div>`;
+  }).join('');
+}
+
+// ── getSections (audition & reader) ──────────────────────────────────────────
 function getSections(script) {
   if (script.sections) return script.sections;
-  // Fallback for incomplete scripts: return one empty section
-  return [{ role: script.roles[0] || 'THEM', text: '' }];
+  return [{ role: script.roles ? (script.roles[0] || 'THEM') : 'THEM', text: '' }];
 }
 
 // ── Audition Flow ─────────────────────────────────────────────────────────────
@@ -905,7 +431,6 @@ function startAuditionFlow(scriptId) {
     document.getElementById('status-dot').className = 'status-dot connected';
     document.getElementById('status-text').textContent = 'Reader connected!';
     document.getElementById('btn-enter-audition').classList.remove('hidden');
-
     conn.on('open', () => conn.send({ type: 'script', data: script }));
     conn.on('data', msg => handleAuditionCommand(msg));
     conn.on('close', () => toast('Reader disconnected'));
@@ -929,12 +454,10 @@ function showMeText(text) {
   const container = document.getElementById('audition-text-container');
   const textEl = document.getElementById('audition-text');
   const blank = document.getElementById('audition-blank');
-
   textEl.style.fontSize = '32px';
   textEl.textContent = text;
   blank.style.opacity = '0';
   container.classList.remove('hidden');
-
   textEl.style.transform = 'translateY(0)';
   setTimeout(() => startScrolling(textEl), 500);
 }
@@ -950,7 +473,6 @@ function startScrolling(textEl) {
   const rate = state.settings.scrollRate;
   let startTime = null;
   const maxScroll = textEl.offsetHeight + window.innerHeight;
-
   function step(ts) {
     if (!startTime) startTime = ts;
     const elapsed = (ts - startTime) / 1000;
@@ -969,7 +491,6 @@ function stopScrolling() {
 function startReaderMode(script, conn) {
   state.readerConn = conn;
   const { meLabel, themLabel } = state.settings;
-
   document.getElementById('reader-title').textContent = script.name;
   const statusEl = document.getElementById('reader-status');
   statusEl.className = conn ? 'reader-status connected' : 'reader-status';
@@ -977,13 +498,11 @@ function startReaderMode(script, conn) {
 
   const sections = getSections(script);
   const container = document.getElementById('reader-sections');
-
   container.innerHTML = sections.map((sec, i) => {
     const label = sec.role === 'ME' ? meLabel : themLabel;
-    const text = sec.text || '';
     return `<div class="reader-section" data-role="${sec.role}" data-index="${i}">
               <div class="reader-section-label">${esc(label)}</div>
-              <div class="reader-section-text">${esc(text)}</div>
+              <div class="reader-section-text">${esc(sec.text || '')}</div>
             </div>`;
   }).join('');
 
@@ -1027,9 +546,7 @@ function handleIncomingPeer(peerId) {
       document.getElementById('reader-status').className = 'reader-status connected';
       document.getElementById('reader-status').textContent = '●';
     });
-    conn.on('data', msg => {
-      if (msg.type === 'script') startReaderMode(msg.data, conn);
-    });
+    conn.on('data', msg => { if (msg.type === 'script') startReaderMode(msg.data, conn); });
     conn.on('close', () => {
       toast('Disconnected');
       document.getElementById('reader-status').className = 'reader-status disconnected';
@@ -1116,9 +633,7 @@ async function registerSW() {
   navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
 }
 
-function showUpdateBanner() {
-  document.getElementById('update-banner').classList.remove('hidden');
-}
+function showUpdateBanner() { document.getElementById('update-banner').classList.remove('hidden'); }
 
 function applyUpdate() {
   const reg = state.swReg;
@@ -1144,10 +659,8 @@ async function checkForUpdates() {
 // ── Event Bindings ────────────────────────────────────────────────────────────
 function bindEvents() {
   document.getElementById('overlay').addEventListener('click', closeAllPanels);
-
   document.getElementById('btn-menu').addEventListener('click', () => openPanel('menu-panel'));
   document.getElementById('btn-menu-close').addEventListener('click', closeAllPanels);
-
   document.getElementById('btn-settings').addEventListener('click', () => { renderSettings(); openPanel('settings-panel'); });
   document.getElementById('btn-settings-close').addEventListener('click', closeAllPanels);
 
@@ -1157,13 +670,9 @@ function bindEvents() {
   document.getElementById('pdf-input-global').addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
 
   document.getElementById('btn-import-quit').addEventListener('click', () => { showView('view-home'); renderHome(); });
-  document.getElementById('script-name').addEventListener('input', e => { state.importData.name = e.target.value; });
-  document.getElementById('btn-import-confirm').addEventListener('click', createScript);
 
   // Footer nav
-  document.getElementById('btn-footer-home').addEventListener('click', () => {
-    showView('view-home'); renderHome();
-  });
+  document.getElementById('btn-footer-home').addEventListener('click', () => { showView('view-home'); renderHome(); });
   document.getElementById('btn-footer-edit').addEventListener('click', async () => {
     if (!state.currentScriptId) return;
     showView('view-editor');
@@ -1182,49 +691,46 @@ function bindEvents() {
   // Editor
   document.getElementById('btn-editor-back').addEventListener('click', () => { showView('view-home'); renderHome(); });
 
-  document.getElementById('btn-editor-done').addEventListener('click', async () => {
+  document.getElementById('btn-editor-done').addEventListener('click', () => {
     const script = state.scripts.find(s => s.id === state.currentScriptId);
-    if (!script) return;
-    if (!script.splits.length) { toast('Add at least one split first'); return; }
+    if (!script || !script.lines || !script.lines.length) { toast('No lines to save'); return; }
 
-    const btn = document.getElementById('btn-editor-done');
-    btn.textContent = '…';
-    btn.disabled = true;
-
-    await extractSectionTexts(state.currentScriptId);
+    script.sections = [];
+    let current = null;
+    for (const line of script.lines) {
+      if (line.role === 'CUT') { current = null; continue; }
+      if (!current || current.role !== line.role) {
+        current = { role: line.role, text: line.text };
+        script.sections.push(current);
+      } else {
+        current.text += '\n' + line.text;
+      }
+    }
     script.complete = true;
     saveScripts();
-
-    btn.textContent = '✓';
-    btn.disabled = false;
     toast('Script ready!');
     showView('view-home');
     renderHome();
   });
 
-  // PDF tap-to-split (account for CSS zoom on pdf-pages)
-  document.getElementById('pdf-pages').addEventListener('click', e => {
-    const pdfPages = document.getElementById('pdf-pages');
-    const rect = pdfPages.getBoundingClientRect();
-    const displayY = (e.clientY - rect.top) / editorZoom;
-    if (state.currentScriptId) addSplit(state.currentScriptId, displayYToPdfY(displayY, state.currentScriptId));
+  document.getElementById('select-all-lines').addEventListener('change', e => {
+    document.querySelectorAll('.line-check').forEach(cb => cb.checked = e.target.checked);
   });
-  document.getElementById('pdf-viewer').addEventListener('contextmenu', e => e.preventDefault());
 
-  // Zoom slider — scales only the canvas layer, not the overlay controls
-  document.getElementById('zoom-slider').addEventListener('input', e => {
-    editorZoom = +e.target.value / 100;
-    document.getElementById('zoom-val').textContent = e.target.value + '%';
-    const canvasLayer = document.getElementById('pdf-canvas-layer');
-    const pdfPages = document.getElementById('pdf-pages');
-    if (canvasLayer && _pdfNaturalWidth) {
-      canvasLayer.style.transform = `scale(${editorZoom})`;
-      // Expand layout to match visual size so viewer scrolls correctly
-      canvasLayer.style.marginRight = `${Math.max(0, _pdfNaturalWidth * (editorZoom - 1))}px`;
-      canvasLayer.style.marginBottom = `${Math.max(0, _pdfNaturalHeight * (editorZoom - 1))}px`;
-      pdfPages.style.width = (_pdfNaturalWidth * Math.max(1, editorZoom)) + 'px';
-    }
-    if (state.currentScriptId) renderOverlay(state.currentScriptId);
+  document.getElementById('line-role-select').addEventListener('change', e => {
+    const role = e.target.value;
+    if (!role || !state.currentScriptId) { e.target.value = ''; return; }
+    const script = state.scripts.find(s => s.id === state.currentScriptId);
+    if (!script || !script.lines) return;
+
+    const checked = [...document.querySelectorAll('.line-check:checked')];
+    if (!checked.length) { toast('Select lines first'); e.target.value = ''; return; }
+
+    checked.forEach(cb => { script.lines[+cb.dataset.index].role = role; });
+    saveScripts();
+    renderLineList(state.currentScriptId);
+    e.target.value = '';
+    document.getElementById('select-all-lines').checked = false;
   });
 
   // QR / Audition
@@ -1273,7 +779,6 @@ function init() {
   const mVer = document.getElementById('menu-version');
   if (mVer) mVer.textContent = `Brando ${vText}`;
 
-  // Auto-select most recent script so footer buttons are immediately usable
   if (state.scripts.length > 0 && !state.currentScriptId) {
     state.currentScriptId = state.scripts[0].id;
   }

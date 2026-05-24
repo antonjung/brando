@@ -214,10 +214,17 @@ html, body {
   gap: 12px;
 }
 
-.script-card-title {
+.script-card-info {
   flex: 1;
+  min-width: 0;
+}
+
+.script-card-title {
   font-size: 16px;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .script-card-meta {
@@ -243,31 +250,24 @@ html, body {
   color: var(--text-muted);
 }
 
-.script-card-actions {
-  display: flex;
-  border-top: 1px solid var(--border);
-}
-
-.script-action-btn {
-  flex: 1;
-  padding: 10px;
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+.script-trash-btn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+  margin-left: 4px;
 }
 
-.script-action-btn:not(:last-child) { border-right: 1px solid var(--border); }
-.script-action-btn:active { background: var(--surface2); }
-
-.script-action-btn.primary-action { color: var(--accent); font-weight: 600; }
-.script-action-btn.danger { color: var(--danger); }
+.script-trash-btn:active { background: var(--surface2); }
+.script-trash-btn svg { width: 16px; height: 16px; display: block; }
 
 /* ── Import ───────────────────────────────── */
 .import-content {
@@ -338,113 +338,106 @@ html, body {
   font-size: 15px;
 }
 
-/* ── Editor ───────────────────────────────── */
-.editor-hint {
-  padding: 10px 16px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  font-size: 13px;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-.script-sections {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.editor-section {
-  border-radius: var(--radius);
-  overflow: hidden;
-  margin-bottom: 4px;
-}
-
-.editor-section[data-role="ME"] { background: var(--me-bg); }
-.editor-section[data-role="THEM"] { background: var(--them-bg); }
-
-.section-role-bar {
-  display: flex;
-  padding: 6px;
-  gap: 6px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-}
-
-.role-btn {
-  flex: 1;
-  padding: 6px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  background: transparent;
-  color: var(--text-muted);
-  transition: all 0.15s;
-}
-
-.editor-section[data-role="ME"] .role-btn[data-role="ME"],
-.editor-section[data-role="THEM"] .role-btn[data-role="THEM"] {
-  background: rgba(255,255,255,0.15);
-  color: var(--text);
-  border-color: rgba(255,255,255,0.25);
-}
-
-.section-lines {
-  padding: 4px 0;
-}
-
-.section-line {
-  padding: 8px 14px;
-  font-size: 14px;
-  line-height: 1.5;
-  cursor: pointer;
-  transition: background 0.1s;
-  border-radius: 4px;
-  user-select: none;
-}
-
-.editor-section[data-role="ME"] .section-line { color: var(--me-color); }
-.editor-section[data-role="THEM"] .section-line { color: var(--them-color); }
-
-.section-line:active { background: rgba(255,255,255,0.1); }
-.section-line.empty { color: var(--text-muted); font-style: italic; }
-
-.section-divider {
+/* ── Line Editor ──────────────────────────── */
+.line-editor-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 0;
-  margin: 2px 0;
-  cursor: pointer;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.select-all-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text-muted);
-  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
-.section-divider::before, .section-divider::after {
-  content: '';
+.select-all-wrap input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.line-role-select {
   flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-
-.section-divider span {
-  white-space: nowrap;
-  padding: 4px 10px;
+  padding: 7px 10px;
   background: var(--surface2);
-  border-radius: 20px;
   border: 1px solid var(--border);
-  transition: background 0.15s, color 0.15s;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
-.section-divider:active span {
-  background: var(--danger);
-  color: white;
-  border-color: var(--danger);
+.line-list-wrap {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.line-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.line-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.line-check {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.line-text {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.5;
+  user-select: text;
+}
+
+.line-row.cut .line-text {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.line-role-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.04em;
+}
+
+.line-role-badge.me   { background: var(--me-bg);   color: var(--me-color); }
+.line-role-badge.them { background: var(--them-bg);  color: var(--them-color); }
+.line-role-badge.cut  { background: var(--surface2); color: var(--text-muted); }
+
+.line-loading-msg {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 15px;
 }
 
 /* ── QR Screen ────────────────────────────── */
@@ -972,37 +965,10 @@ html, body {
 .icon-btn svg         { width: 22px; height: 22px; display: block; }
 .empty-icon svg       { width: 56px; height: 56px; color: var(--text-muted); }
 .drop-icon svg        { width: 48px; height: 48px; color: var(--text-muted); }
-.script-action-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
 .menu-list button svg  { width: 17px; height: 17px; flex-shrink: 0; }
 .update-banner svg    { width: 18px; height: 18px; vertical-align: middle; }
 .btn-secondary svg    { width: 15px; height: 15px; }
-.toolbar-icon svg     { width: 16px; height: 16px; color: var(--text-muted); flex-shrink: 0; }
 .note-action-btn svg  { width: 16px; height: 16px; display: block; }
-
-/* ── Editor toolbar (zoom) ────────────────── */
-.editor-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 14px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-#zoom-slider {
-  flex: 1;
-  accent-color: var(--accent);
-  height: 4px;
-}
-
-#zoom-val {
-  font-size: 12px;
-  color: var(--text-muted);
-  min-width: 38px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
 
 /* ── Footer Nav ───────────────────────────── */
 .footer-nav {
@@ -1125,205 +1091,3 @@ html, body {
   letter-spacing: 0.06em;
 }
 
-/* ── PDF Viewer ───────────────────────────── */
-.pdf-viewer {
-  flex: 1;
-  overflow: auto;
-  position: relative;
-  background: #888;
-  -webkit-overflow-scrolling: touch;
-  -webkit-touch-callout: none;
-  user-select: none;
-}
-
-.pdf-pages {
-  position: relative;
-  background: #fff;
-  box-shadow: 0 2px 20px rgba(0,0,0,0.4);
-}
-
-.pdf-pages canvas {
-  display: block;
-}
-
-#pdf-canvas-layer {
-  display: block;
-  font-size: 0;
-  line-height: 0;
-  transform-origin: top left;
-}
-
-.pdf-loading {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.55);
-  color: #fff;
-  font-size: 16px;
-  z-index: 30;
-}
-
-/* ── PDF Overlay ──────────────────────────── */
-.pdf-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  pointer-events: none;
-  z-index: 10;
-}
-
-/* Section tinted region */
-.pdf-section {
-  position: absolute;
-  left: 0;
-  right: 0;
-  pointer-events: none;
-  border-left: 5px solid;
-  transition: background 0.15s;
-}
-
-.pdf-section.me {
-  background: rgba(100, 220, 100, 0.18);
-  border-color: rgba(100, 220, 100, 0.8);
-}
-
-.pdf-section.them {
-  background: rgba(220, 100, 100, 0.18);
-  border-color: rgba(220, 100, 100, 0.8);
-}
-
-
-/* ── Scissors button on split lines ──────── */
-.split-scissors-btn {
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 34px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.65);
-  border: 1px solid rgba(255,255,255,0.18);
-  border-radius: 8px;
-  color: rgba(255,255,255,0.85);
-  cursor: pointer;
-  pointer-events: all;
-  backdrop-filter: blur(4px);
-  transition: background 0.15s;
-  -webkit-touch-callout: none;
-}
-.split-scissors-btn:active { background: rgba(255,255,255,0.15); }
-.split-scissors-btn svg { display: block; }
-
-/* ── Line context menu ────────────────────── */
-.line-menu {
-  position: fixed;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  box-shadow: 0 6px 24px rgba(0,0,0,0.55);
-  z-index: 500;
-  min-width: 140px;
-  overflow: hidden;
-}
-
-.line-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  width: 100%;
-  padding: 13px 16px;
-  background: none;
-  border: none;
-  color: var(--text);
-  font-size: 15px;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.1s;
-}
-.line-menu-item:active { background: var(--surface2); }
-.line-menu-item.active { color: var(--accent2); }
-.line-menu-item.line-menu-cut { color: var(--danger); }
-.line-menu-item svg { flex-shrink: 0; }
-
-.line-menu-sep { height: 1px; background: var(--border); }
-
-/* ── Fixed top / bottom lines ────────────── */
-.pdf-split-line--fixed {
-  transform: none;
-  height: 6px;
-  cursor: default;
-  pointer-events: none;
-}
-.pdf-split-line--top  { top: 0 !important; }
-.pdf-split-line--bottom { }
-.pdf-split-line--fixed::after {
-  background: rgba(180, 180, 180, 0.6);
-  box-shadow: none;
-  height: 2px;
-}
-
-/* Split line — tall hit area for dragging, stripe via pseudo-element */
-.pdf-split-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 44px;
-  transform: translateY(-50%);
-  z-index: 15;
-  pointer-events: all;
-  cursor: ns-resize;
-  touch-action: none;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
-  background: transparent;
-  display: flex;
-  align-items: center;
-}
-
-.pdf-split-line::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: rgba(255, 210, 0, 0.95);
-  box-shadow: 0 0 6px rgba(255,210,0,0.6);
-  pointer-events: none;
-  transition: height 0.15s, box-shadow 0.15s;
-}
-
-.pdf-split-line.dragging::after {
-  height: 6px;
-  background: rgba(255, 235, 0, 1);
-  box-shadow: 0 0 20px rgba(255,210,0,1), 0 0 4px rgba(255,210,0,1);
-}
-
-.pdf-split-remove {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 26px;
-  height: 26px;
-  background: #c0392b;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  pointer-events: all;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-  z-index: 16;
-}
-.pdf-split-remove svg { display: block; }

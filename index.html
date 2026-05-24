@@ -56,14 +56,20 @@
       <h1 id="editor-title">Edit Script</h1>
       <button class="icon-btn" id="btn-editor-done"><i data-feather="check"></i></button>
     </header>
-    <div class="editor-toolbar">
-      <i data-feather="zoom-in" class="toolbar-icon"></i>
-      <input type="range" id="zoom-slider" min="50" max="250" step="10" value="100">
-      <span id="zoom-val">100%</span>
+    <div class="line-editor-bar">
+      <label class="select-all-wrap">
+        <input type="checkbox" id="select-all-lines"><span>All</span>
+      </label>
+      <select id="line-role-select" class="line-role-select">
+        <option value="">assign selected…</option>
+        <option value="ME">ME</option>
+        <option value="THEM">THEM</option>
+        <option value="CUT">Cut</option>
+      </select>
     </div>
-    <div id="pdf-viewer" class="pdf-viewer">
-      <div id="pdf-pages" class="pdf-pages"></div>
-      <div id="pdf-loading" class="pdf-loading hidden">Rendering PDF&hellip;</div>
+    <div class="line-list-wrap">
+      <div id="line-list" class="line-list"></div>
+      <div id="line-loading" class="line-loading-msg hidden">Extracting text…</div>
     </div>
   </div>
 
