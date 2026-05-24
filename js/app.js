@@ -356,13 +356,13 @@ async function extractLines(pdfData) {
 
   for (const item of allItems) {
     if (prevY !== null && Math.abs(item.y - prevY) > 4) {
-      if (lineItems.length) textLines.push({ text: lineItems.join(' '), role: 'THEM' });
+      if (lineItems.length) textLines.push({ text: lineItems.join(' '), role: null });
       lineItems = [];
     }
     lineItems.push(item.str);
     prevY = item.y;
   }
-  if (lineItems.length) textLines.push({ text: lineItems.join(' '), role: 'THEM' });
+  if (lineItems.length) textLines.push({ text: lineItems.join(' '), role: null });
 
   return textLines;
 }
@@ -405,12 +405,12 @@ function renderLineList(scriptId) {
     .map((line, i) => ({ line, i }))
     .filter(({ line }) => line.role !== 'CUT')
     .map(({ line, i }) => {
-      const rc    = line.role === 'ME' ? 'me' : 'them';
-      const label = line.role === 'ME' ? meLabel : themLabel;
+      const rc    = line.role === 'ME' ? 'me' : line.role === 'THEM' ? 'them' : '';
+      const label = line.role === 'ME' ? meLabel : line.role === 'THEM' ? themLabel : '';
       return `
         <div class="line-row ${rc}" data-index="${i}">
-          <span class="line-text">${esc(line.text)}</span>
           <span class="line-role-badge ${rc}">${esc(label)}</span>
+          <span class="line-text">${esc(line.text)}</span>
           <button class="line-btn line-btn-a" data-index="${i}" data-role="ME">A</button>
           <button class="line-btn line-btn-b" data-index="${i}" data-role="THEM">B</button>
           <button class="line-btn line-btn-trash" data-index="${i}" data-role="CUT">${icon('trash-2', 13)}</button>
@@ -528,7 +528,7 @@ function startReaderMode(script, conn) {
     lines = [];
     let cur = null;
     for (const line of script.lines) {
-      if (line.role === 'CUT') { cur = null; continue; }
+      if (!line.role || line.role === 'CUT') { cur = null; continue; }
       if (!cur || cur.role !== line.role) {
         cur = { role: line.role, text: line.text };
         lines.push(cur);
@@ -745,7 +745,7 @@ function bindEvents() {
     script.sections = [];
     let current = null;
     for (const line of script.lines) {
-      if (line.role === 'CUT') { current = null; continue; }
+      if (!line.role || line.role === 'CUT') { current = null; continue; }
       if (!current || current.role !== line.role) {
         current = { role: line.role, text: line.text };
         script.sections.push(current);
