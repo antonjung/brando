@@ -1093,17 +1093,6 @@ html, body {
   border-color: rgba(220, 100, 100, 0.8);
 }
 
-.pdf-section.trash {
-  background: repeating-linear-gradient(
-    -45deg,
-    rgba(80, 80, 80, 0.08),
-    rgba(80, 80, 80, 0.08) 6px,
-    transparent 6px,
-    transparent 14px
-  );
-  border-color: rgba(120, 120, 120, 0.5);
-  opacity: 0.5;
-}
 
 /* Role pill (ME / THEM / 🗑) */
 .section-pill {
@@ -1135,9 +1124,14 @@ html, body {
   background: rgba(0,0,0,0.75);
 }
 
-.pdf-section.me    .section-pill-btn[data-role="ME"].active   { border-color: rgba(100,220,100,0.9); color: #7fff7f; }
-.pdf-section.them  .section-pill-btn[data-role="THEM"].active { border-color: rgba(220,100,100,0.9); color: #ffaaaa; }
-.pdf-section.trash .section-pill-btn[data-role="TRASH"].active { border-color: rgba(180,180,180,0.6); color: #ccc; }
+.pdf-section.me   .section-pill-btn[data-role="ME"].active   { border-color: rgba(100,220,100,0.9); color: #7fff7f; }
+.pdf-section.them .section-pill-btn[data-role="THEM"].active  { border-color: rgba(220,100,100,0.9); color: #ffaaaa; }
+
+.pill-delete {
+  border-color: transparent !important;
+  opacity: 0.55;
+}
+.pill-delete:hover { opacity: 1; }
 
 /* Split line */
 .pdf-split-line {

@@ -14,7 +14,6 @@ const state = {
   notes: [],
   settings: {
     scrollRate: 40,
-    fontSize: 28,
     theme: 'dark',
     meLabel: 'ME',
     themLabel: 'THEM',
@@ -154,13 +153,10 @@ function applyTheme(theme) {
 
 // ── Settings ──────────────────────────────────────────────────────────────────
 function renderSettings() {
-  const { scrollRate, fontSize, theme, meLabel, themLabel } = state.settings;
+  const { scrollRate, theme, meLabel, themLabel } = state.settings;
   const scrollEl = document.getElementById('setting-scroll');
   scrollEl.value = scrollRate;
   document.getElementById('setting-scroll-val').textContent = `${scrollRate} px/s`;
-  const fontEl = document.getElementById('setting-fontsize');
-  fontEl.value = fontSize;
-  document.getElementById('setting-fontsize-val').textContent = `${fontSize}px`;
   document.getElementById('setting-me').value = meLabel;
   document.getElementById('setting-them').value = themLabel;
   applyTheme(theme);
@@ -170,11 +166,6 @@ function initSettingsListeners() {
   document.getElementById('setting-scroll').addEventListener('input', e => {
     state.settings.scrollRate = +e.target.value;
     document.getElementById('setting-scroll-val').textContent = `${e.target.value} px/s`;
-    saveSettings();
-  });
-  document.getElementById('setting-fontsize').addEventListener('input', e => {
-    state.settings.fontSize = +e.target.value;
-    document.getElementById('setting-fontsize-val').textContent = `${e.target.value}px`;
     saveSettings();
   });
   document.querySelectorAll('.theme-btn').forEach(btn => {
@@ -459,30 +450,41 @@ function renderOverlay(scriptId) {
     if (i >= boundaries.length - 1) return;
     const bottom = boundaries[i + 1];
     const role = script.roles[i] || 'THEM';
+    const regionClass = role === 'ME' ? 'me' : 'them';
 
-    const regionClass = role === 'ME' ? 'me' : role === 'TRASH' ? 'trash' : 'them';
     const region = document.createElement('div');
     region.className = `pdf-section ${regionClass}`;
     region.style.top = top + 'px';
     region.style.height = (bottom - top) + 'px';
 
-    // Role toggle pill: ME / THEM / 🗑
+    // Role pill: ME / THEM / delete
     const pill = document.createElement('div');
     pill.className = 'section-pill';
 
-    [['ME', meLabel], ['THEM', themLabel], ['TRASH', '🗑']].forEach(([r, label]) => {
+    [['ME', meLabel], ['THEM', themLabel]].forEach(([r, label]) => {
       const btn = document.createElement('button');
       btn.className = 'section-pill-btn' + (r === role ? ' active' : '');
       btn.textContent = label;
       btn.dataset.role = r;
       btn.addEventListener('click', e => {
         e.stopPropagation();
-        script.roles[i] = r;
-        saveScripts();
-        renderOverlay(scriptId);
+        setRoleWithCascade(scriptId, i, r);
       });
       pill.appendChild(btn);
     });
+
+    // Delete button — removes the section's boundary, merging with neighbour
+    const delBtn = document.createElement('button');
+    delBtn.className = 'section-pill-btn pill-delete';
+    delBtn.textContent = '🗑';
+    delBtn.title = 'Delete section';
+    delBtn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const ok = await showConfirm('Delete section',
+        'Remove this section? Its content will be absorbed into the adjacent section.');
+      if (ok) deleteSection(scriptId, i);
+    });
+    pill.appendChild(delBtn);
 
     region.appendChild(pill);
     overlay.appendChild(region);
@@ -548,6 +550,43 @@ function removeSplit(scriptId, fraction) {
 
   script.splits = script.splits.filter(f => f !== fraction);
   script.roles.splice(idx + 1, 1);
+
+  saveScripts();
+  renderOverlay(scriptId);
+}
+
+// Set a role and cascade alternating roles to all subsequent sections
+function setRoleWithCascade(scriptId, sectionIndex, role) {
+  const script = state.scripts.find(s => s.id === scriptId);
+  if (!script) return;
+  script.roles[sectionIndex] = role;
+  let current = role;
+  for (let i = sectionIndex + 1; i < script.roles.length; i++) {
+    current = current === 'ME' ? 'THEM' : 'ME';
+    script.roles[i] = current;
+  }
+  saveScripts();
+  renderOverlay(scriptId);
+}
+
+// Delete section by removing its bordering split and merging into neighbour
+function deleteSection(scriptId, sectionIndex) {
+  const script = state.scripts.find(s => s.id === scriptId);
+  if (!script) return;
+  const sorted = [...script.splits].sort((a, b) => a - b);
+  if (sorted.length === 0) { toast('Cannot delete the only section'); return; }
+
+  if (sectionIndex === 0) {
+    // Merge forward: remove the first split, keep next section's role
+    const remove = sorted[0];
+    script.splits = script.splits.filter(f => f !== remove);
+    script.roles.splice(0, 1);
+  } else {
+    // Merge backward: remove the split before this section, keep previous section's role
+    const remove = sorted[sectionIndex - 1];
+    script.splits = script.splits.filter(f => f !== remove);
+    script.roles.splice(sectionIndex, 1);
+  }
 
   saveScripts();
   renderOverlay(scriptId);
@@ -672,7 +711,7 @@ function showMeText(text) {
   const textEl = document.getElementById('audition-text');
   const blank = document.getElementById('audition-blank');
 
-  textEl.style.fontSize = state.settings.fontSize + 'px';
+  textEl.style.fontSize = '32px';
   textEl.textContent = text;
   blank.style.opacity = '0';
   container.classList.remove('hidden');
