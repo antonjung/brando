@@ -836,7 +836,7 @@ function init() {
   if (incomingPeer) {
     window.history.replaceState({}, '', window.location.pathname);
     showView('view-reader');
-    document.getElementById('reader-title').textContent = 'Connecting…';
+    document.getElementById('main-title').textContent = 'Connecting…';
     document.getElementById('reader-sections').innerHTML =
       '<div class="empty-notes"><span>&#128279;</span><p>Connecting to audition device…</p></div>';
     handleIncomingPeer(incomingPeer);
