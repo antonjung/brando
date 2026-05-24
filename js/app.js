@@ -381,6 +381,12 @@ async function renderEditor(scriptId) {
   }
 
   loading.classList.add('hidden');
+
+  // Update dropdown labels to match current settings
+  const sel = document.getElementById('line-role-select');
+  sel.options[1].textContent = state.settings.meLabel;
+  sel.options[2].textContent = state.settings.themLabel;
+
   renderLineList(scriptId);
 }
 
@@ -388,16 +394,21 @@ function renderLineList(scriptId) {
   const script = state.scripts.find(s => s.id === scriptId);
   const lineList = document.getElementById('line-list');
   if (!script || !script.lines) return;
+  const { meLabel, themLabel } = state.settings;
 
-  lineList.innerHTML = script.lines.map((line, i) => {
-    const rc = line.role === 'ME' ? 'me' : line.role === 'CUT' ? 'cut' : 'them';
-    return `
-      <div class="line-row ${rc}" data-index="${i}">
-        <input type="checkbox" class="line-check" data-index="${i}">
-        <span class="line-text">${esc(line.text)}</span>
-        <span class="line-role-badge ${rc}">${line.role}</span>
-      </div>`;
-  }).join('');
+  lineList.innerHTML = script.lines
+    .map((line, i) => ({ line, i }))
+    .filter(({ line }) => line.role !== 'CUT')
+    .map(({ line, i }) => {
+      const rc = line.role === 'ME' ? 'me' : 'them';
+      const label = line.role === 'ME' ? meLabel : themLabel;
+      return `
+        <div class="line-row ${rc}" data-index="${i}">
+          <input type="checkbox" class="line-check" data-index="${i}">
+          <span class="line-text">${esc(line.text)}</span>
+          <span class="line-role-badge ${rc}">${esc(label)}</span>
+        </div>`;
+    }).join('');
 }
 
 // ── getSections (audition & reader) ──────────────────────────────────────────
