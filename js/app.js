@@ -207,6 +207,7 @@ function renderHome() {
     list.classList.add('hidden');
     list.innerHTML = '';
     empty.classList.remove('hidden');
+    updateFooter();
     return;
   }
 
@@ -215,22 +216,58 @@ function renderHome() {
   list.innerHTML = state.scripts.map(scriptCard).join('');
 
   if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2 });
-  list.querySelectorAll('.script-action-btn[data-action]').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      const id = btn.closest('.script-card').dataset.id;
-      handleScriptAction(btn.dataset.action, id);
+
+  list.querySelectorAll('.script-card').forEach(card => {
+    card.addEventListener('click', e => {
+      if (e.target.closest('[data-action="delete"]')) return;
+      selectScript(card.dataset.id);
     });
   });
+
+  list.querySelectorAll('[data-action="delete"]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      handleScriptAction('delete', btn.closest('.script-card').dataset.id);
+    });
+  });
+
+  updateFooter();
+}
+
+function selectScript(id) {
+  state.currentScriptId = id;
+  document.querySelectorAll('.script-card').forEach(c => {
+    c.classList.toggle('selected', c.dataset.id === id);
+  });
+  updateFooter();
+}
+
+function updateFooter() {
+  const script = state.scripts.find(s => s.id === state.currentScriptId);
+  const hasScript = !!script;
+  const isComplete = hasScript && script.complete;
+
+  const editBtn = document.getElementById('btn-footer-edit');
+  const meBtn   = document.getElementById('btn-footer-me');
+  const themBtn = document.getElementById('btn-footer-them');
+  if (editBtn) editBtn.disabled = !hasScript;
+  if (meBtn)   meBtn.disabled   = !isComplete;
+  if (themBtn) themBtn.disabled = !isComplete;
+
+  const meLabel   = document.getElementById('footer-me-label');
+  const themLabel = document.getElementById('footer-them-label');
+  if (meLabel)   meLabel.textContent   = state.settings.meLabel;
+  if (themLabel) themLabel.textContent = state.settings.themLabel;
 }
 
 function scriptCard(s) {
   const sectionCount = s.complete && s.sections ? s.sections.length : (s.splits ? s.splits.length + 1 : 1);
   const statusLabel = s.complete ? 'Ready' : 'Draft';
   const statusClass = s.complete ? 'complete' : 'draft';
+  const selected = state.currentScriptId === s.id;
 
   return `
-    <div class="script-card" data-id="${s.id}">
+    <div class="script-card${selected ? ' selected' : ''}" data-id="${s.id}">
       <div class="script-card-header">
         <div>
           <div class="script-card-title">${esc(s.name)}</div>
@@ -239,12 +276,7 @@ function scriptCard(s) {
         <span class="script-status ${statusClass}">${statusLabel}</span>
       </div>
       <div class="script-card-actions">
-        <button class="script-action-btn" data-action="edit">${icon('edit-2',14)} Edit</button>
-        ${s.complete
-          ? `<button class="script-action-btn primary-action" data-action="audition">${icon('film',14)} Audition</button>
-             <button class="script-action-btn primary-action" data-action="reader">${icon('book-open',14)} Reader</button>`
-          : ''}
-        <button class="script-action-btn danger" data-action="delete">${icon('trash-2',14)}</button>
+        <button class="script-action-btn danger" data-action="delete">${icon('trash-2',14)} Delete</button>
       </div>
     </div>`;
 }
@@ -253,21 +285,12 @@ async function handleScriptAction(action, id) {
   const script = state.scripts.find(s => s.id === id);
   if (!script) return;
 
-  if (action === 'edit') {
-    state.currentScriptId = id;
-    showView('view-editor');
-    await renderEditor(id);
-  } else if (action === 'audition') {
-    state.currentScriptId = id;
-    startAuditionFlow(id);
-  } else if (action === 'reader') {
-    state.currentScriptId = id;
-    startReaderMode(script, null);
-  } else if (action === 'delete') {
+  if (action === 'delete') {
     const ok = await showConfirm('Delete script', `Delete "${script.name}"? This cannot be undone.`);
     if (ok) {
       await deletePDF(id).catch(() => {});
       state.scripts = state.scripts.filter(s => s.id !== id);
+      if (state.currentScriptId === id) state.currentScriptId = null;
       saveScripts();
       renderHome();
       toast('Script deleted');
@@ -280,57 +303,38 @@ function esc(str) {
 }
 
 // ── PDF Import ────────────────────────────────────────────────────────────────
-function initImportView() {
-  const dropZone = document.getElementById('drop-zone');
-  const fileInput = document.getElementById('pdf-input');
-  const nameInput = document.getElementById('script-name');
-  const createBtn = document.getElementById('btn-create-script');
-  const progress = document.getElementById('import-progress');
-  const dropLabel = document.getElementById('drop-label');
-
+function triggerImport() {
   state.importData = { name: '', arrayBuffer: null };
-  nameInput.value = '';
-  dropLabel.textContent = 'Tap to select PDF';
-  dropLabel.classList.remove('file-name');
-  createBtn.classList.add('hidden');
-  progress.classList.add('hidden');
-
-  // Re-attach file handlers (clone to clear old ones)
-  const newDrop = dropZone.cloneNode(true);
-  dropZone.parentNode.replaceChild(newDrop, dropZone);
-  const newInput = document.getElementById('pdf-input');
-
-  newDrop.addEventListener('click', () => newInput.click());
-  newInput.addEventListener('change', () => handleFile(newInput.files[0]));
-
-  newDrop.addEventListener('dragover', e => { e.preventDefault(); newDrop.classList.add('dragover'); });
-  newDrop.addEventListener('dragleave', () => newDrop.classList.remove('dragover'));
-  newDrop.addEventListener('drop', e => { e.preventDefault(); newDrop.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+  document.getElementById('script-name').value = '';
+  document.getElementById('import-progress').classList.add('hidden');
+  document.getElementById('btn-import-confirm').disabled = true;
+  const inp = document.getElementById('pdf-input-global');
+  inp.value = '';
+  inp.click();
 }
 
 async function handleFile(file) {
   if (!file || file.type !== 'application/pdf') { toast('Please select a PDF file'); return; }
 
-  const dropLabel = document.getElementById('drop-label');
-  const progress = document.getElementById('import-progress');
-  const createBtn = document.getElementById('btn-create-script');
-  const nameInput = document.getElementById('script-name');
+  const nameInput    = document.getElementById('script-name');
+  const progress     = document.getElementById('import-progress');
+  const confirmBtn   = document.getElementById('btn-import-confirm');
 
-  dropLabel.textContent = file.name;
-  dropLabel.classList.add('file-name');
-  progress.classList.remove('hidden');
+  const autoName = file.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ');
+  nameInput.value = autoName;
+  state.importData.name = autoName;
+
   progress.textContent = 'Loading PDF…';
+  progress.classList.remove('hidden');
+  confirmBtn.disabled = true;
 
-  if (!nameInput.value.trim()) {
-    nameInput.value = file.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ');
-    state.importData.name = nameInput.value;
-  }
+  showView('view-import');
 
   try {
     state.importData.arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: state.importData.arrayBuffer.slice(0) }).promise;
-    progress.textContent = `${pdf.numPages} page${pdf.numPages !== 1 ? 's' : ''} loaded — tap Create Script`;
-    createBtn.classList.remove('hidden');
+    progress.textContent = `${pdf.numPages} page${pdf.numPages !== 1 ? 's' : ''} loaded`;
+    confirmBtn.disabled = false;
   } catch (err) {
     progress.textContent = 'Failed to read PDF — try another file.';
     console.error(err);
@@ -361,9 +365,9 @@ async function createScript() {
   state.importData = { name: '', arrayBuffer: null };
 
   state.currentScriptId = script.id;
-  showView('view-editor');
-  await renderEditor(script.id);
-  toast('Tap the PDF to add splits');
+  showView('view-home');
+  renderHome();
+  toast('Script created — tap Edit to start splitting');
 }
 
 
@@ -513,12 +517,77 @@ function renderOverlay(scriptId) {
     overlay.appendChild(region);
   });
 
-  // Split lines
-  sorted.forEach(fraction => {
+  // Split lines — draggable up/down
+  sorted.forEach((fraction, sortedIdx) => {
+    const minFrac = sortedIdx > 0 ? sorted[sortedIdx - 1] + 0.002 : 0.001;
+    const maxFrac = sortedIdx < sorted.length - 1 ? sorted[sortedIdx + 1] - 0.002 : 0.999;
     const y = fraction * script.totalHeight * editorZoom;
+
     const line = document.createElement('div');
     line.className = 'pdf-split-line';
     line.style.top = y + 'px';
+
+    let dragging = false;
+    let didDrag = false;
+    let startClientY = 0;
+    let liveFraction = fraction;
+    let longPressTimer = null;
+
+    const startDrag = clientY => {
+      dragging = true; didDrag = false; startClientY = clientY; liveFraction = fraction;
+      line.classList.add('dragging');
+    };
+
+    const onMove = clientY => {
+      if (!dragging) return;
+      const deltaY = clientY - startClientY;
+      if (Math.abs(deltaY) > 3) didDrag = true;
+      liveFraction = Math.max(minFrac, Math.min(maxFrac,
+        fraction + deltaY / (script.totalHeight * editorZoom)));
+      line.style.top = (liveFraction * script.totalHeight * editorZoom) + 'px';
+    };
+
+    const onEnd = () => {
+      clearTimeout(longPressTimer);
+      if (!dragging) return;
+      dragging = false;
+      line.classList.remove('dragging');
+      if (didDrag) {
+        const idx = script.splits.findIndex(f => f === fraction);
+        if (idx !== -1) script.splits[idx] = liveFraction;
+        saveScripts();
+        renderOverlay(scriptId);
+      }
+    };
+
+    // Touch: long-press (300ms) activates drag to avoid conflicting with scroll
+    line.addEventListener('touchstart', e => {
+      e.stopPropagation();
+      const touchY = e.touches[0].clientY;
+      longPressTimer = setTimeout(() => startDrag(touchY), 300);
+    }, { passive: true });
+
+    line.addEventListener('touchmove', e => {
+      if (!dragging) { clearTimeout(longPressTimer); return; }
+      e.preventDefault();
+      onMove(e.touches[0].clientY);
+    }, { passive: false });
+
+    line.addEventListener('touchend', e => { e.stopPropagation(); onEnd(); });
+    line.addEventListener('touchcancel', () => { clearTimeout(longPressTimer); onEnd(); });
+
+    // Mouse: drag immediately on mousedown
+    line.addEventListener('mousedown', e => {
+      e.stopPropagation();
+      startDrag(e.clientY);
+      const onMM = ev => onMove(ev.clientY);
+      const onMU = () => { document.removeEventListener('mousemove', onMM); document.removeEventListener('mouseup', onMU); onEnd(); };
+      document.addEventListener('mousemove', onMM);
+      document.addEventListener('mouseup', onMU);
+    });
+
+    line.addEventListener('click', e => e.stopPropagation());
+    line.addEventListener('contextmenu', e => e.preventDefault());
 
     const removeBtn = document.createElement('button');
     removeBtn.className = 'pdf-split-remove';
@@ -526,7 +595,7 @@ function renderOverlay(scriptId) {
     removeBtn.title = 'Remove split';
     removeBtn.addEventListener('click', e => {
       e.stopPropagation();
-      removeSplit(scriptId, fraction);
+      if (!didDrag) removeSplit(scriptId, fraction);
     });
 
     line.appendChild(removeBtn);
@@ -941,13 +1010,30 @@ function bindEvents() {
   document.getElementById('btn-settings').addEventListener('click', () => { renderSettings(); openPanel('settings-panel'); });
   document.getElementById('btn-settings-close').addEventListener('click', closeAllPanels);
 
-  document.getElementById('menu-import').addEventListener('click', () => { closeAllPanels(); initImportView(); showView('view-import'); });
+  document.getElementById('menu-import').addEventListener('click', () => { closeAllPanels(); triggerImport(); });
   document.getElementById('menu-notes').addEventListener('click', () => { closeAllPanels(); renderNotes(); showView('view-notes'); });
-  document.getElementById('btn-import-empty').addEventListener('click', () => { initImportView(); showView('view-import'); });
+  document.getElementById('btn-import-empty').addEventListener('click', triggerImport);
+  document.getElementById('pdf-input-global').addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
 
-  document.getElementById('btn-import-back').addEventListener('click', () => { showView('view-home'); renderHome(); });
+  document.getElementById('btn-import-quit').addEventListener('click', () => { showView('view-home'); renderHome(); });
   document.getElementById('script-name').addEventListener('input', e => { state.importData.name = e.target.value; });
-  document.getElementById('btn-create-script').addEventListener('click', createScript);
+  document.getElementById('btn-import-confirm').addEventListener('click', createScript);
+
+  // Footer nav
+  document.getElementById('btn-footer-edit').addEventListener('click', async () => {
+    if (!state.currentScriptId) return;
+    showView('view-editor');
+    await renderEditor(state.currentScriptId);
+  });
+  document.getElementById('btn-footer-me').addEventListener('click', () => {
+    if (!state.currentScriptId) return;
+    startAuditionFlow(state.currentScriptId);
+  });
+  document.getElementById('btn-footer-them').addEventListener('click', () => {
+    if (!state.currentScriptId) return;
+    const script = state.scripts.find(s => s.id === state.currentScriptId);
+    if (script) startReaderMode(script, null);
+  });
 
   // Editor
   document.getElementById('btn-editor-back').addEventListener('click', () => { showView('view-home'); renderHome(); });
@@ -979,6 +1065,7 @@ function bindEvents() {
     const y = (e.clientY - rect.top) / editorZoom;
     if (state.currentScriptId) addSplit(state.currentScriptId, y);
   });
+  document.getElementById('pdf-viewer').addEventListener('contextmenu', e => e.preventDefault());
 
   // Zoom slider — scales only the canvas layer, not the overlay controls
   document.getElementById('zoom-slider').addEventListener('input', e => {

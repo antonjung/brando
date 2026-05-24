@@ -31,28 +31,37 @@
       <p>No scripts yet.<br>Import a PDF to get started.</p>
       <button class="btn-primary" id="btn-import-empty">Import PDF</button>
     </div>
-    <div class="app-footer"><span id="app-version"></span></div>
+    <nav class="footer-nav" id="footer-nav">
+      <button class="footer-btn active" id="btn-footer-home">
+        <i data-feather="home"></i>
+        <span>Home</span>
+      </button>
+      <button class="footer-btn" id="btn-footer-edit" disabled>
+        <i data-feather="edit-2"></i>
+        <span>Edit</span>
+      </button>
+      <button class="footer-btn footer-me" id="btn-footer-me" disabled>
+        <span id="footer-me-label">ME</span>
+      </button>
+      <button class="footer-btn footer-them" id="btn-footer-them" disabled>
+        <span id="footer-them-label">THEM</span>
+      </button>
+    </nav>
   </div>
 
-  <!-- ── Import ────────────────────────────── -->
+  <!-- ── Import / Create Script ───────────── -->
   <div id="view-import" class="view hidden">
     <header class="app-header">
-      <button class="icon-btn" id="btn-import-back"><i data-feather="arrow-left"></i></button>
-      <h1>Import Script</h1>
-      <div style="width:40px"></div>
+      <button class="icon-btn" id="btn-import-quit"><i data-feather="x"></i></button>
+      <h1>Create Script</h1>
+      <button class="icon-btn" id="btn-import-confirm" disabled><i data-feather="check"></i></button>
     </header>
     <div class="import-content">
       <div class="form-group">
         <label>Script Name</label>
         <input type="text" id="script-name" placeholder="Enter script name..." autocomplete="off">
       </div>
-      <div class="drop-zone" id="drop-zone">
-        <div class="drop-icon"><i data-feather="file-text"></i></div>
-        <p id="drop-label">Tap to select PDF</p>
-        <input type="file" id="pdf-input" accept=".pdf" hidden>
-      </div>
-      <div id="import-progress" class="import-progress hidden">Loading PDF&hellip;</div>
-      <button class="btn-primary hidden" id="btn-create-script">Create Script</button>
+      <div id="import-progress" class="import-progress hidden"></div>
     </div>
   </div>
 
@@ -63,7 +72,6 @@
       <h1 id="editor-title">Edit Script</h1>
       <button class="icon-btn" id="btn-editor-done"><i data-feather="check"></i></button>
     </header>
-    <div class="editor-hint">Tap to add a split &bull; Tap &#10005; to remove a split &bull; Assign each section ME or THEM</div>
     <div class="editor-toolbar">
       <i data-feather="zoom-in" class="toolbar-icon"></i>
       <input type="range" id="zoom-slider" min="50" max="250" step="10" value="100">
@@ -131,6 +139,7 @@
     <div id="notes-list" class="notes-list"></div>
   </div>
 
+  <input type="file" id="pdf-input-global" accept=".pdf" hidden>
 </div><!-- #app -->
 
 <!-- ── Update Banner ──────────────────────── -->

@@ -906,7 +906,7 @@ html, body {
 /* ── Toast ────────────────────────────────── */
 .toast {
   position: fixed;
-  bottom: 24px;
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%) translateY(0);
   background: var(--surface);
@@ -998,14 +998,49 @@ html, body {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── App Footer (version) ─────────────────── */
-.app-footer {
-  padding: 8px 16px 12px;
-  text-align: center;
-  font-size: 11px;
-  color: var(--text-muted);
-  opacity: 0.45;
+/* ── Footer Nav ───────────────────────────── */
+.footer-nav {
+  display: flex;
+  height: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
   flex-shrink: 0;
+}
+
+.footer-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.footer-btn:active { background: var(--surface2); }
+.footer-btn.active { color: var(--accent); }
+.footer-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.footer-btn svg { width: 20px; height: 20px; }
+.footer-btn.footer-me:not(:disabled)   { color: var(--me-color); }
+.footer-btn.footer-them:not(:disabled) { color: var(--them-color); }
+.footer-btn.footer-me span,
+.footer-btn.footer-them span { font-size: 14px; font-weight: 800; letter-spacing: 0; }
+
+/* ── Script Card Selected State ──────────── */
+.script-card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
 }
 
 /* ── Update Banner ────────────────────────── */
@@ -1076,6 +1111,8 @@ html, body {
   position: relative;
   background: #888;
   -webkit-overflow-scrolling: touch;
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 .pdf-pages {
@@ -1225,22 +1262,48 @@ html, body {
 .pill-delete svg { stroke-width: 3; }
 .pill-delete:active { background: rgba(220, 60, 60, 0.6) !important; }
 
-/* Split line */
+/* Split line — tall hit area for dragging, stripe via pseudo-element */
 .pdf-split-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 44px;
+  transform: translateY(-50%);
+  z-index: 15;
+  pointer-events: all;
+  cursor: ns-resize;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+}
+
+.pdf-split-line::after {
+  content: '';
   position: absolute;
   left: 0;
   right: 0;
   height: 3px;
   background: rgba(255, 210, 0, 0.95);
-  z-index: 15;
-  pointer-events: none;
   box-shadow: 0 0 6px rgba(255,210,0,0.6);
+  pointer-events: none;
+  transition: height 0.15s, box-shadow 0.15s;
+}
+
+.pdf-split-line.dragging::after {
+  height: 6px;
+  background: rgba(255, 235, 0, 1);
+  box-shadow: 0 0 20px rgba(255,210,0,1), 0 0 4px rgba(255,210,0,1);
 }
 
 .pdf-split-remove {
   position: absolute;
   left: 10px;
-  top: -13px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 26px;
   height: 26px;
   background: #c0392b;
