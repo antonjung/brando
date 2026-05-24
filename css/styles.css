@@ -385,11 +385,10 @@ html, body {
 
 .line-btn:active { transform: scale(0.88); }
 
-.line-btn-a { background: var(--me-bg); color: var(--me-color); }
-.line-btn-b { background: var(--them-bg); color: var(--them-color); }
-.line-btn-trash { background: none; color: var(--danger); opacity: 0.7; }
-.line-btn-trash:active { opacity: 1; }
-.line-btn-trash svg { display: block; }
+.line-btn-a { background: var(--me-bg); color: var(--me-color); opacity: 0.4; }
+.line-btn-b { background: var(--them-bg); color: var(--them-color); opacity: 0.4; }
+.line-btn-a.active { opacity: 1; box-shadow: 0 0 0 2px var(--me-color); }
+.line-btn-b.active { opacity: 1; box-shadow: 0 0 0 2px var(--them-color); }
 
 .line-text {
   flex: 1;
@@ -398,18 +397,14 @@ html, body {
   user-select: text;
 }
 
-.line-row.cut .line-text {
-  opacity: 0.4;
-  text-decoration: line-through;
-}
 
 .line-role-badge {
   flex-shrink: 0;
-  width: 44px;
+  min-width: 64px;
   text-align: center;
   font-size: 11px;
   font-weight: 700;
-  padding: 3px 6px;
+  padding: 3px 8px;
   border-radius: 20px;
   letter-spacing: 0.04em;
   overflow: hidden;

@@ -407,19 +407,21 @@ function renderLineList(scriptId) {
     .map(({ line, i }) => {
       const rc    = line.role === 'ME' ? 'me' : line.role === 'THEM' ? 'them' : '';
       const label = line.role === 'ME' ? meLabel : line.role === 'THEM' ? themLabel : '';
+      const activeA = line.role === 'ME'   ? ' active' : '';
+      const activeB = line.role === 'THEM' ? ' active' : '';
       return `
         <div class="line-row ${rc}" data-index="${i}">
           <span class="line-role-badge ${rc}">${esc(label)}</span>
           <span class="line-text">${esc(line.text)}</span>
-          <button class="line-btn line-btn-a" data-index="${i}" data-role="ME">A</button>
-          <button class="line-btn line-btn-b" data-index="${i}" data-role="THEM">B</button>
-          <button class="line-btn line-btn-trash" data-index="${i}" data-role="CUT">${icon('trash-2', 13)}</button>
+          <button class="line-btn line-btn-a${activeA}" data-index="${i}" data-role="ME">A</button>
+          <button class="line-btn line-btn-b${activeB}" data-index="${i}" data-role="THEM">B</button>
         </div>`;
     }).join('');
 
   lineList.querySelectorAll('.line-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      script.lines[+btn.dataset.index].role = btn.dataset.role;
+      const line = script.lines[+btn.dataset.index];
+      line.role = line.role === btn.dataset.role ? null : btn.dataset.role;
       saveScripts();
       renderLineList(scriptId);
     });
