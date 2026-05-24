@@ -864,6 +864,30 @@ html, body {
   gap: 8px;
 }
 
+/* ── Colour picker ────────────────────────── */
+.color-options {
+  display: flex;
+  gap: 10px;
+}
+
+.color-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  outline: 2px solid rgba(0,0,0,0.15);
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.color-btn:active  { transform: scale(0.9); }
+.color-btn.active  { border-color: var(--text); transform: scale(1.12); outline-color: transparent; }
+
+.color-btn[data-color="yellow"] { background: #ffd600; }
+.color-btn[data-color="blue"]   { background: #2196f3; }
+.color-btn[data-color="pink"]   { background: #ec407a; }
+.color-btn[data-color="red"]    { background: #ef5350; }
+
 .theme-btn {
   flex: 1;
   padding: 10px 6px;
@@ -1090,4 +1114,21 @@ html, body {
   color: var(--accent);
   letter-spacing: 0.06em;
 }
+
+/* ── Reader section highlight colours ────── */
+.reader-section.color-yellow { background: #fffde7 !important; border-color: #f9a825 !important; }
+.reader-section.color-yellow .reader-section-label,
+.reader-section.color-yellow .reader-section-text { color: #4a3800 !important; }
+
+.reader-section.color-blue { background: #e3f2fd !important; border-color: #1565c0 !important; }
+.reader-section.color-blue .reader-section-label,
+.reader-section.color-blue .reader-section-text { color: #0a2748 !important; }
+
+.reader-section.color-pink { background: #fce4ec !important; border-color: #c2185b !important; }
+.reader-section.color-pink .reader-section-label,
+.reader-section.color-pink .reader-section-text { color: #4a0028 !important; }
+
+.reader-section.color-red { background: #ffebee !important; border-color: #c62828 !important; }
+.reader-section.color-red .reader-section-label,
+.reader-section.color-red .reader-section-text { color: #4a0000 !important; }
 

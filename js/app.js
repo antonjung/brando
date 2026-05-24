@@ -18,7 +18,7 @@ function icon(name, size = 16) {
 const state = {
   scripts: [],
   notes: [],
-  settings: { scrollRate: 40, theme: 'dark', meLabel: 'ME', themLabel: 'THEM' },
+  settings: { scrollRate: 40, theme: 'dark', meLabel: 'ME', themLabel: 'THEM', meColor: 'yellow', themColor: 'blue' },
   importData: { name: '', arrayBuffer: null },
   currentScriptId: null,
   peer: null,
@@ -146,12 +146,16 @@ function applyTheme(theme) {
 
 // ── Settings ─────────────────────────────────────────────────────────────────
 function renderSettings() {
-  const { scrollRate, meLabel, themLabel } = state.settings;
+  const { scrollRate, meLabel, themLabel, meColor, themColor } = state.settings;
   document.getElementById('setting-scroll').value = scrollRate;
   document.getElementById('setting-scroll-val').textContent = `${scrollRate} px/s`;
   document.getElementById('setting-me').value = meLabel;
   document.getElementById('setting-them').value = themLabel;
   applyTheme(state.settings.theme);
+  document.querySelectorAll('.color-btn[data-for="meColor"]').forEach(b =>
+    b.classList.toggle('active', b.dataset.color === (meColor || 'yellow')));
+  document.querySelectorAll('.color-btn[data-for="themColor"]').forEach(b =>
+    b.classList.toggle('active', b.dataset.color === (themColor || 'blue')));
 }
 
 function initSettingsListeners() {
@@ -176,6 +180,15 @@ function initSettingsListeners() {
     state.settings.themLabel = e.target.value.trim() || 'THEM';
     e.target.value = state.settings.themLabel;
     saveSettings();
+  });
+  document.querySelectorAll('.color-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.for;
+      state.settings[key] = btn.dataset.color;
+      document.querySelectorAll(`.color-btn[data-for="${key}"]`).forEach(b =>
+        b.classList.toggle('active', b.dataset.color === btn.dataset.color));
+      saveSettings();
+    });
   });
 }
 
@@ -507,13 +520,34 @@ function startReaderMode(script, conn) {
   statusEl.className = conn ? 'reader-status connected' : 'reader-status';
   statusEl.textContent = conn ? '●' : '○';
 
-  const sections = getSections(script);
+  // Group consecutive same-character lines into blocks (skip CUT)
+  let lines;
+  if (script.lines) {
+    lines = [];
+    let cur = null;
+    for (const line of script.lines) {
+      if (line.role === 'CUT') { cur = null; continue; }
+      if (!cur || cur.role !== line.role) {
+        cur = { role: line.role, text: line.text };
+        lines.push(cur);
+      } else {
+        cur.text += '\n' + line.text;
+      }
+    }
+  } else {
+    lines = getSections(script);
+  }
+
   const container = document.getElementById('reader-sections');
-  container.innerHTML = sections.map((sec, i) => {
-    const label = sec.role === 'ME' ? meLabel : themLabel;
-    return `<div class="reader-section" data-role="${sec.role}" data-index="${i}">
+  const meColorClass  = 'color-' + (state.settings.meColor  || 'yellow');
+  const themColorClass = 'color-' + (state.settings.themColor || 'blue');
+
+  container.innerHTML = lines.map((line, i) => {
+    const label      = line.role === 'ME' ? meLabel : themLabel;
+    const colorClass = line.role === 'ME' ? meColorClass : themColorClass;
+    return `<div class="reader-section ${colorClass}" data-role="${line.role}" data-index="${i}">
               <div class="reader-section-label">${esc(label)}</div>
-              <div class="reader-section-text">${esc(sec.text || '')}</div>
+              <div class="reader-section-text">${esc(line.text || '')}</div>
             </div>`;
   }).join('');
 
