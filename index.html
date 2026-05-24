@@ -151,6 +151,7 @@
   <ul class="menu-list">
     <li><button id="menu-import"><i data-feather="file-text"></i> Import PDF</button></li>
     <li><button id="menu-notes"><i data-feather="book-open"></i> Notes</button></li>
+    <li><button id="menu-how-it-works"><i data-feather="info"></i> How it works</button></li>
     <li class="menu-divider"></li>
     <li><button id="menu-check-update"><i data-feather="refresh-cw"></i> Check for Update</button></li>
     <li><button id="menu-reload"><i data-feather="rotate-ccw"></i> Reload App</button></li>
@@ -190,6 +191,46 @@
     <div class="setting-group">
       <label>Their Lines Label</label>
       <input type="text" id="setting-them" maxlength="10" autocomplete="off">
+    </div>
+  </div>
+</div>
+
+<!-- ── How It Works Modal ──────────────────── -->
+<div id="how-it-works-modal" class="hiw-overlay hidden">
+  <div class="hiw-sheet">
+    <div class="hiw-header">
+      <h2>How it works</h2>
+      <button class="icon-btn" id="btn-hiw-close"><i data-feather="x"></i></button>
+    </div>
+    <div class="hiw-body">
+      <section class="hiw-section">
+        <h3><i data-feather="smartphone"></i> Two devices, two roles</h3>
+        <table class="hiw-table">
+          <tr><th>Device A</th><td>The actor — tap <strong>ME</strong></td></tr>
+          <tr><th>Device B</th><td>The reader — scan the QR code</td></tr>
+        </table>
+      </section>
+      <section class="hiw-section">
+        <h3><i data-feather="link"></i> Connecting</h3>
+        <ol>
+          <li>On Device A, select a script and tap <strong>ME</strong>.</li>
+          <li>A QR code appears — have Device B scan it.</li>
+          <li>Device B opens the app and connects automatically.</li>
+          <li>Device A shows <em>"Reader connected!"</em> — tap <strong>Enter Audition Mode</strong>.</li>
+        </ol>
+      </section>
+      <section class="hiw-section">
+        <h3><i data-feather="play"></i> Running the audition</h3>
+        <ul>
+          <li>Device B sees all script sections listed.</li>
+          <li>Tap a <strong>THEM</strong> section → Device A's screen clears.</li>
+          <li>Tap a <strong>ME</strong> section → Device A shows the lines and they scroll at the set speed.</li>
+        </ul>
+      </section>
+      <section class="hiw-section">
+        <h3><i data-feather="user"></i> Solo / testing</h3>
+        <p>Tap <strong>THEM</strong> on any device to enter reader mode locally — no second device needed.</p>
+      </section>
     </div>
   </div>
 </div>

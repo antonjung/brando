@@ -734,6 +734,9 @@ async function checkForUpdates() {
 // ── Event Bindings ────────────────────────────────────────────────────────────
 function bindEvents() {
   document.getElementById('overlay').addEventListener('click', closeAllPanels);
+  document.getElementById('how-it-works-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
+  });
   document.getElementById('btn-menu').addEventListener('click', () => openPanel('menu-panel'));
   document.getElementById('btn-menu-close').addEventListener('click', closeAllPanels);
   document.getElementById('btn-settings').addEventListener('click', () => { renderSettings(); openPanel('settings-panel'); });
@@ -741,6 +744,14 @@ function bindEvents() {
 
   document.getElementById('menu-import').addEventListener('click', () => { closeAllPanels(); triggerImport(); });
   document.getElementById('menu-notes').addEventListener('click', () => { closeAllPanels(); renderNotes(); showView('view-notes'); });
+  document.getElementById('menu-how-it-works').addEventListener('click', () => {
+    closeAllPanels();
+    document.getElementById('how-it-works-modal').classList.remove('hidden');
+    if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2 });
+  });
+  document.getElementById('btn-hiw-close').addEventListener('click', () => {
+    document.getElementById('how-it-works-modal').classList.add('hidden');
+  });
   document.getElementById('btn-import-empty').addEventListener('click', triggerImport);
   document.getElementById('pdf-input-global').addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
 
