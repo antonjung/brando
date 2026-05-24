@@ -18,7 +18,7 @@ function icon(name, size = 16) {
 const state = {
   scripts: [],
   notes: [],
-  settings: { scrollRate: 40, theme: 'dark', meLabel: 'ME', themLabel: 'THEM', meColor: 'yellow', themColor: 'blue' },
+  settings: { scrollRate: 40, fontSize: 16, theme: 'dark', meLabel: 'ME', themLabel: 'THEM' },
   importData: { name: '', arrayBuffer: null },
   currentScriptId: null,
   peer: null,
@@ -166,23 +166,32 @@ function applyTheme(theme) {
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────
+function applyFontSize(size) {
+  document.body.style.setProperty('--content-font-size', size + 'px');
+}
+
 function renderSettings() {
-  const { scrollRate, meLabel, themLabel, meColor, themColor } = state.settings;
+  const { scrollRate, fontSize, meLabel, themLabel } = state.settings;
   document.getElementById('setting-scroll').value = scrollRate;
   document.getElementById('setting-scroll-val').textContent = `${scrollRate} px/s`;
+  document.getElementById('setting-font-size').value = fontSize || 16;
+  document.getElementById('setting-font-size-val').textContent = `${fontSize || 16}px`;
   document.getElementById('setting-me').value = meLabel;
   document.getElementById('setting-them').value = themLabel;
   applyTheme(state.settings.theme);
-  document.querySelectorAll('.color-btn[data-for="meColor"]').forEach(b =>
-    b.classList.toggle('active', b.dataset.color === (meColor || 'yellow')));
-  document.querySelectorAll('.color-btn[data-for="themColor"]').forEach(b =>
-    b.classList.toggle('active', b.dataset.color === (themColor || 'blue')));
 }
 
 function initSettingsListeners() {
   document.getElementById('setting-scroll').addEventListener('input', e => {
     state.settings.scrollRate = +e.target.value;
     document.getElementById('setting-scroll-val').textContent = `${e.target.value} px/s`;
+    saveSettings();
+  });
+
+  document.getElementById('setting-font-size').addEventListener('input', e => {
+    state.settings.fontSize = +e.target.value;
+    document.getElementById('setting-font-size-val').textContent = `${e.target.value}px`;
+    applyFontSize(+e.target.value);
     saveSettings();
   });
   document.querySelectorAll('.theme-btn').forEach(btn => {
@@ -205,6 +214,7 @@ function initSettingsListeners() {
   document.querySelectorAll('.color-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const key = btn.dataset.for;
+      if (!key) return;
       state.settings[key] = btn.dataset.color;
       document.querySelectorAll(`.color-btn[data-for="${key}"]`).forEach(b =>
         b.classList.toggle('active', b.dataset.color === btn.dataset.color));
@@ -503,7 +513,6 @@ function showMeText(text) {
   const container = document.getElementById('audition-text-container');
   const textEl = document.getElementById('audition-text');
   const blank = document.getElementById('audition-blank');
-  textEl.style.fontSize = '32px';
   textEl.textContent = text;
   blank.style.opacity = '0';
   container.classList.remove('hidden');
@@ -566,13 +575,9 @@ function startReaderMode(script, conn) {
   }
 
   const container = document.getElementById('reader-sections');
-  const meColorClass  = 'color-' + (state.settings.meColor  || 'yellow');
-  const themColorClass = 'color-' + (state.settings.themColor || 'blue');
-
   container.innerHTML = lines.map((line, i) => {
-    const label      = line.role === 'ME' ? meLabel : themLabel;
-    const colorClass = line.role === 'ME' ? meColorClass : themColorClass;
-    return `<div class="reader-section ${colorClass}" data-role="${line.role}" data-index="${i}">
+    const label = line.role === 'ME' ? meLabel : themLabel;
+    return `<div class="reader-section" data-role="${line.role}" data-index="${i}">
               <div class="reader-section-label">${esc(label)}</div>
               <div class="reader-section-text">${esc(line.text || '')}</div>
             </div>`;
@@ -808,6 +813,7 @@ function init() {
   loadSettings();
   loadNotes();
   applyTheme(state.settings.theme);
+  applyFontSize(state.settings.fontSize || 16);
   bindEvents();
   initSettingsListeners();
   registerSW();
