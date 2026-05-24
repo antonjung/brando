@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head><title>Icon Generator</title></head>
+<body>
+<canvas id="c192" width="192" height="192"></canvas>
+<canvas id="c512" width="512" height="512"></canvas>
+<script>
+function draw(canvas) {
+  const ctx = canvas.getContext('2d');
+  const s = canvas.width;
+  const r = s * 0.16;
+  // Background
+  ctx.fillStyle = '#0d0d1a';
+  ctx.beginPath();
+  ctx.moveTo(r, 0); ctx.lineTo(s - r, 0);
+  ctx.quadraticCurveTo(s, 0, s, r);
+  ctx.lineTo(s, s - r);
+  ctx.quadraticCurveTo(s, s, s - r, s);
+  ctx.lineTo(r, s);
+  ctx.quadraticCurveTo(0, s, 0, s - r);
+  ctx.lineTo(0, r);
+  ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+  ctx.fill();
+  // Letter B
+  ctx.fillStyle = '#c9a84c';
+  ctx.font = `bold ${s * 0.58}px Georgia, serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('B', s / 2, s / 2 + s * 0.04);
+}
+draw(document.getElementById('c192'));
+draw(document.getElementById('c512'));
+
+// Download links
+['192','512'].forEach(sz => {
+  const canvas = document.getElementById('c' + sz);
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = 'icon-' + sz + '.png';
+  a.textContent = 'Download icon-' + sz + '.png';
+  a.style.display = 'block';
+  a.style.margin = '10px';
+  document.body.appendChild(a);
+});
+</script>
+</body>
+</html>
