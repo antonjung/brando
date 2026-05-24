@@ -1023,3 +1023,150 @@ html, body {
   opacity: 0;
   pointer-events: none;
 }
+
+/* ── Garamond title ───────────────────────── */
+.app-header h1 {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+
+/* ── PDF Viewer ───────────────────────────── */
+.pdf-viewer {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+  background: #888;
+}
+
+.pdf-pages {
+  position: relative;
+  background: #fff;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.4);
+}
+
+.pdf-pages canvas {
+  display: block;
+}
+
+.pdf-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 16px;
+  z-index: 30;
+}
+
+/* ── PDF Overlay ──────────────────────────── */
+.pdf-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Section tinted region */
+.pdf-section {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  border-left: 5px solid;
+  transition: background 0.15s;
+}
+
+.pdf-section.me {
+  background: rgba(100, 220, 100, 0.18);
+  border-color: rgba(100, 220, 100, 0.8);
+}
+
+.pdf-section.them {
+  background: rgba(220, 100, 100, 0.18);
+  border-color: rgba(220, 100, 100, 0.8);
+}
+
+.pdf-section.trash {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(80, 80, 80, 0.08),
+    rgba(80, 80, 80, 0.08) 6px,
+    transparent 6px,
+    transparent 14px
+  );
+  border-color: rgba(120, 120, 120, 0.5);
+  opacity: 0.5;
+}
+
+/* Role pill (ME / THEM / 🗑) */
+.section-pill {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  pointer-events: all;
+  z-index: 20;
+}
+
+.section-pill-btn {
+  padding: 5px 11px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: 2px solid transparent;
+  cursor: pointer;
+  background: rgba(0,0,0,0.55);
+  color: rgba(255,255,255,0.45);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  backdrop-filter: blur(4px);
+}
+
+.section-pill-btn.active {
+  color: #fff;
+  background: rgba(0,0,0,0.75);
+}
+
+.pdf-section.me    .section-pill-btn[data-role="ME"].active   { border-color: rgba(100,220,100,0.9); color: #7fff7f; }
+.pdf-section.them  .section-pill-btn[data-role="THEM"].active { border-color: rgba(220,100,100,0.9); color: #ffaaaa; }
+.pdf-section.trash .section-pill-btn[data-role="TRASH"].active { border-color: rgba(180,180,180,0.6); color: #ccc; }
+
+/* Split line */
+.pdf-split-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 210, 0, 0.95);
+  z-index: 15;
+  pointer-events: none;
+  box-shadow: 0 0 6px rgba(255,210,0,0.6);
+}
+
+.pdf-split-remove {
+  position: absolute;
+  right: 10px;
+  top: -12px;
+  width: 24px;
+  height: 24px;
+  background: #d04040;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 11px;
+  cursor: pointer;
+  pointer-events: all;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  z-index: 16;
+}

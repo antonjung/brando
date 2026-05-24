@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Brando</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/brando.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@700&display=swap" rel="stylesheet">
   <meta name="theme-color" content="#0d0d1a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -62,8 +65,11 @@
       <h1 id="editor-title">Edit Script</h1>
       <button class="icon-btn" id="btn-editor-done" title="Mark complete">&#10003;</button>
     </header>
-    <div class="editor-hint">Tap a line to split the section there &bull; Tap a divider to remove it</div>
-    <div id="script-sections" class="script-sections"></div>
+    <div class="editor-hint">Tap anywhere to split &bull; Tap &#10005; on a line to remove &bull; Set each section to ME, THEM or delete it</div>
+    <div id="pdf-viewer" class="pdf-viewer">
+      <div id="pdf-pages" class="pdf-pages"></div>
+      <div id="pdf-loading" class="pdf-loading hidden">Rendering PDF&hellip;</div>
+    </div>
   </div>
 
   <!-- ── QR ────────────────────────────────── -->

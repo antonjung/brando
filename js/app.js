@@ -6,7 +6,6 @@ const BASE_URL = (() => {
   return u.endsWith('index.html') ? u.slice(0, -10) : u + '/';
 })();
 
-// ── Version ──────────────────────────────────────────────────────────────────
 const APP_VERSION = window.APP_VERSION || '—';
 
 // ── State ────────────────────────────────────────────────────────────────────
@@ -14,22 +13,20 @@ const state = {
   scripts: [],
   notes: [],
   settings: {
-    scrollRate: 40,      // px per second
-    fontSize: 28,        // px
+    scrollRate: 40,
+    fontSize: 28,
     theme: 'dark',
     meLabel: 'ME',
     themLabel: 'THEM',
   },
-  importData: { name: '', lines: [] },
+  importData: { name: '', arrayBuffer: null },
   currentScriptId: null,
   peer: null,
   peerId: null,
   conn: null,
-  readerConn: null,     // on reader device
+  readerConn: null,
   scrollRaf: null,
-  scrollStartY: null,
-  scrollStartTime: null,
-  swReg: null,           // ServiceWorkerRegistration
+  swReg: null,
 };
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -61,6 +58,45 @@ function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
+// ── IndexedDB (PDF storage) ───────────────────────────────────────────────────
+let _db = null;
+function openDB() {
+  if (_db) return Promise.resolve(_db);
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('brando_db', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('pdfs');
+    req.onsuccess = e => { _db = e.target.result; resolve(_db); };
+    req.onerror = () => reject(req.error);
+  });
+}
+async function savePDF(id, buffer) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('pdfs', 'readwrite');
+    tx.objectStore('pdfs').put(buffer, id);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function loadPDF(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('pdfs', 'readonly');
+    const req = tx.objectStore('pdfs').get(id);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function deletePDF(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('pdfs', 'readwrite');
+    tx.objectStore('pdfs').delete(id);
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 // ── Navigation ────────────────────────────────────────────────────────────────
 function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
@@ -74,7 +110,6 @@ function openPanel(id) {
   document.getElementById(id).classList.add('open');
   document.getElementById('overlay').classList.remove('hidden');
 }
-
 function closeAllPanels() {
   document.querySelectorAll('.slide-panel').forEach(p => p.classList.remove('open'));
   document.getElementById('overlay').classList.add('hidden');
@@ -105,38 +140,27 @@ function showConfirm(title, msg) {
         </div>
       </div>`;
     document.body.appendChild(overlay);
-    overlay.querySelector('.confirm-cancel').addEventListener('click', () => {
-      overlay.remove(); resolve(false);
-    });
-    overlay.querySelector('.confirm-ok').addEventListener('click', () => {
-      overlay.remove(); resolve(true);
-    });
-    overlay.addEventListener('click', e => {
-      if (e.target === overlay) { overlay.remove(); resolve(false); }
-    });
+    overlay.querySelector('.confirm-cancel').addEventListener('click', () => { overlay.remove(); resolve(false); });
+    overlay.querySelector('.confirm-ok').addEventListener('click', () => { overlay.remove(); resolve(true); });
+    overlay.addEventListener('click', e => { if (e.target === overlay) { overlay.remove(); resolve(false); } });
   });
 }
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
 function applyTheme(theme) {
   document.body.setAttribute('data-theme', theme);
-  document.querySelectorAll('.theme-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.theme === theme);
-  });
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === theme));
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────
 function renderSettings() {
   const { scrollRate, fontSize, theme, meLabel, themLabel } = state.settings;
-
   const scrollEl = document.getElementById('setting-scroll');
   scrollEl.value = scrollRate;
   document.getElementById('setting-scroll-val').textContent = `${scrollRate} px/s`;
-
   const fontEl = document.getElementById('setting-fontsize');
   fontEl.value = fontSize;
   document.getElementById('setting-fontsize-val').textContent = `${fontSize}px`;
-
   document.getElementById('setting-me').value = meLabel;
   document.getElementById('setting-them').value = themLabel;
   applyTheme(theme);
@@ -148,13 +172,11 @@ function initSettingsListeners() {
     document.getElementById('setting-scroll-val').textContent = `${e.target.value} px/s`;
     saveSettings();
   });
-
   document.getElementById('setting-fontsize').addEventListener('input', e => {
     state.settings.fontSize = +e.target.value;
     document.getElementById('setting-fontsize-val').textContent = `${e.target.value}px`;
     saveSettings();
   });
-
   document.querySelectorAll('.theme-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       state.settings.theme = btn.dataset.theme;
@@ -162,13 +184,11 @@ function initSettingsListeners() {
       saveSettings();
     });
   });
-
   document.getElementById('setting-me').addEventListener('change', e => {
     state.settings.meLabel = e.target.value.trim() || 'ME';
     e.target.value = state.settings.meLabel;
     saveSettings();
   });
-
   document.getElementById('setting-them').addEventListener('change', e => {
     state.settings.themLabel = e.target.value.trim() || 'THEM';
     e.target.value = state.settings.themLabel;
@@ -190,7 +210,7 @@ function renderHome() {
 
   empty.classList.add('hidden');
   list.classList.remove('hidden');
-  list.innerHTML = state.scripts.map(s => scriptCard(s)).join('');
+  list.innerHTML = state.scripts.map(scriptCard).join('');
 
   list.querySelectorAll('.script-action-btn[data-action]').forEach(btn => {
     btn.addEventListener('click', e => {
@@ -202,8 +222,7 @@ function renderHome() {
 }
 
 function scriptCard(s) {
-  const { meLabel, themLabel } = state.settings;
-  const sectionCount = getSections(s).length;
+  const sectionCount = s.complete && s.sections ? s.sections.length : (s.splits ? s.splits.length + 1 : 1);
   const statusLabel = s.complete ? 'Ready' : 'Draft';
   const statusClass = s.complete ? 'complete' : 'draft';
 
@@ -233,8 +252,8 @@ async function handleScriptAction(action, id) {
 
   if (action === 'edit') {
     state.currentScriptId = id;
-    renderEditor(id);
     showView('view-editor');
+    await renderEditor(id);
   } else if (action === 'audition') {
     state.currentScriptId = id;
     startAuditionFlow(id);
@@ -244,6 +263,7 @@ async function handleScriptAction(action, id) {
   } else if (action === 'delete') {
     const ok = await showConfirm('Delete script', `Delete "${script.name}"? This cannot be undone.`);
     if (ok) {
+      await deletePDF(id).catch(() => {});
       state.scripts = state.scripts.filter(s => s.id !== id);
       saveScripts();
       renderHome();
@@ -265,33 +285,28 @@ function initImportView() {
   const progress = document.getElementById('import-progress');
   const dropLabel = document.getElementById('drop-label');
 
-  state.importData = { name: '', lines: [] };
+  state.importData = { name: '', arrayBuffer: null };
   nameInput.value = '';
   dropLabel.textContent = 'Tap to select PDF';
   dropLabel.classList.remove('file-name');
   createBtn.classList.add('hidden');
   progress.classList.add('hidden');
 
-  dropZone.addEventListener('click', () => fileInput.click(), { once: true });
-  fileInput.addEventListener('change', () => handleFile(fileInput.files[0]), { once: true });
+  // Re-attach file handlers (clone to clear old ones)
+  const newDrop = dropZone.cloneNode(true);
+  dropZone.parentNode.replaceChild(newDrop, dropZone);
+  const newInput = document.getElementById('pdf-input');
 
-  dropZone.addEventListener('dragover', e => {
-    e.preventDefault();
-    dropZone.classList.add('dragover');
-  });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-  dropZone.addEventListener('drop', e => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
-    handleFile(e.dataTransfer.files[0]);
-  });
+  newDrop.addEventListener('click', () => newInput.click());
+  newInput.addEventListener('change', () => handleFile(newInput.files[0]));
+
+  newDrop.addEventListener('dragover', e => { e.preventDefault(); newDrop.classList.add('dragover'); });
+  newDrop.addEventListener('dragleave', () => newDrop.classList.remove('dragover'));
+  newDrop.addEventListener('drop', e => { e.preventDefault(); newDrop.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
 }
 
 async function handleFile(file) {
-  if (!file || file.type !== 'application/pdf') {
-    toast('Please select a PDF file');
-    return;
-  }
+  if (!file || file.type !== 'application/pdf') { toast('Please select a PDF file'); return; }
 
   const dropLabel = document.getElementById('drop-label');
   const progress = document.getElementById('import-progress');
@@ -301,6 +316,7 @@ async function handleFile(file) {
   dropLabel.textContent = file.name;
   dropLabel.classList.add('file-name');
   progress.classList.remove('hidden');
+  progress.textContent = 'Loading PDF…';
 
   if (!nameInput.value.trim()) {
     nameInput.value = file.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ');
@@ -308,230 +324,303 @@ async function handleFile(file) {
   }
 
   try {
-    state.importData.lines = await extractLinesFromPDF(file);
-    progress.textContent = `Extracted ${state.importData.lines.length} lines`;
+    state.importData.arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: state.importData.arrayBuffer.slice(0) }).promise;
+    progress.textContent = `${pdf.numPages} page${pdf.numPages !== 1 ? 's' : ''} loaded — tap Create Script`;
     createBtn.classList.remove('hidden');
   } catch (err) {
-    progress.textContent = 'Failed to read PDF. Try another file.';
+    progress.textContent = 'Failed to read PDF — try another file.';
     console.error(err);
   }
 }
 
-async function extractLinesFromPDF(file) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  const allLines = [];
-
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum);
-    const content = await page.getTextContent();
-
-    // Group items by Y position (within 3px tolerance)
-    const rows = [];
-    let prevY = null;
-    let row = [];
-
-    const sorted = [...content.items].sort((a, b) => {
-      const yDiff = b.transform[5] - a.transform[5];
-      if (Math.abs(yDiff) > 3) return yDiff;
-      return a.transform[4] - b.transform[4];
-    });
-
-    for (const item of sorted) {
-      const y = item.transform[5];
-      if (prevY !== null && Math.abs(y - prevY) > 5) {
-        const text = row.join(' ').trim();
-        if (text) rows.push(text);
-        row = [];
-      }
-      if (item.str.trim()) row.push(item.str);
-      prevY = y;
-    }
-    if (row.length) {
-      const text = row.join(' ').trim();
-      if (text) rows.push(text);
-    }
-
-    allLines.push(...rows);
-    if (pageNum < pdf.numPages) allLines.push(''); // page separator
-  }
-
-  // Remove runs of blank lines, keep at most one
-  return allLines.reduce((acc, line, i, arr) => {
-    if (line === '' && arr[i - 1] === '') return acc;
-    acc.push(line);
-    return acc;
-  }, []);
-}
-
-function createScript() {
+async function createScript() {
   const nameInput = document.getElementById('script-name');
   const name = nameInput.value.trim() || state.importData.name || 'Untitled';
-  if (!state.importData.lines.length) { toast('No PDF content to import'); return; }
+  if (!state.importData.arrayBuffer) { toast('Select a PDF first'); return; }
 
   const script = {
     id: uid(),
     name,
-    lines: state.importData.lines,
-    boundaries: [],   // line indices after which section breaks occur
-    roles: ['THEM'],  // role per section (starts with 1 section = 1 role)
+    splits: [],          // Y fractions (0–1) of total rendered height
+    roles: ['THEM'],     // role per section
+    sections: null,      // [{role, text}] — filled on completion
+    pageHeights: [],     // rendered CSS px height per page
+    totalHeight: 0,
+    renderScale: 1,
     complete: false,
     createdAt: Date.now(),
   };
 
+  await savePDF(script.id, state.importData.arrayBuffer);
   state.scripts.unshift(script);
   saveScripts();
-  state.importData = { name: '', lines: [] };
+  state.importData = { name: '', arrayBuffer: null };
 
   state.currentScriptId = script.id;
-  renderEditor(script.id);
   showView('view-editor');
-  toast('Script created — now split it into sections');
+  await renderEditor(script.id);
+  toast('Tap the PDF to add splits');
 }
 
-// ── Script Editor ─────────────────────────────────────────────────────────────
-function getSections(script) {
-  const { lines, boundaries, roles } = script;
-  if (!lines.length) return [];
-
-  const sorted = [...boundaries].sort((a, b) => a - b);
-  const sections = [];
-  let start = 0;
-
-  for (let i = 0; i <= sorted.length; i++) {
-    const end = i < sorted.length ? sorted[i] : lines.length - 1;
-    sections.push({
-      index: i,
-      startLine: start,
-      endLine: end,
-      lines: lines.slice(start, end + 1),
-      role: roles[i] || 'THEM',
-    });
-    start = end + 1;
-  }
-
-  return sections;
-}
-
-function renderEditor(scriptId) {
+// ── PDF Editor ────────────────────────────────────────────────────────────────
+async function renderEditor(scriptId) {
   const script = state.scripts.find(s => s.id === scriptId);
   if (!script) return;
 
-  const { meLabel, themLabel } = state.settings;
   document.getElementById('editor-title').textContent = script.name;
-  const container = document.getElementById('script-sections');
-  const sections = getSections(script);
-  let html = '';
 
-  sections.forEach((sec, si) => {
-    const roleLabel = sec.role === 'ME' ? meLabel : themLabel;
-    const linesHtml = sec.lines.map((line, li) => {
-      const absLine = sec.startLine + li;
-      const isEmpty = !line.trim();
-      return `<div class="section-line${isEmpty ? ' empty' : ''}"
-                   data-script="${scriptId}" data-line="${absLine}">
-                ${isEmpty ? '&nbsp;' : esc(line)}
-              </div>`;
-    }).join('');
+  const pdfPages = document.getElementById('pdf-pages');
+  const pdfLoading = document.getElementById('pdf-loading');
+  pdfPages.innerHTML = '';
+  pdfLoading.classList.remove('hidden');
 
-    html += `
-      <div class="editor-section" data-role="${sec.role}" data-section="${si}">
-        <div class="section-role-bar">
-          <button class="role-btn${sec.role === 'ME' ? ' active' : ''}"
-                  data-role="ME" data-script="${scriptId}" data-section="${si}">
-            ${esc(meLabel)}
-          </button>
-          <button class="role-btn${sec.role === 'THEM' ? ' active' : ''}"
-                  data-role="THEM" data-script="${scriptId}" data-section="${si}">
-            ${esc(themLabel)}
-          </button>
-        </div>
-        <div class="section-lines">${linesHtml}</div>
-      </div>`;
+  let pdfData;
+  try {
+    pdfData = await loadPDF(scriptId);
+  } catch {
+    pdfLoading.textContent = 'Could not load PDF — please re-import.';
+    return;
+  }
 
-    // Add divider between sections (represents the boundary)
-    if (si < sections.length - 1) {
-      const boundaryLine = sec.endLine;
-      html += `<div class="section-divider" data-script="${scriptId}" data-boundary="${boundaryLine}">
-                 <span>&#10005; remove split</span>
-               </div>`;
-    }
-  });
+  if (!pdfData) {
+    pdfLoading.textContent = 'PDF not found — please re-import.';
+    return;
+  }
 
-  container.innerHTML = html;
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-  // Section line click → add boundary after that line
-  container.querySelectorAll('.section-line').forEach(el => {
-    el.addEventListener('click', () => {
-      const lineIdx = +el.dataset.line;
-      const sid = el.dataset.script;
-      const script = state.scripts.find(s => s.id === sid);
-      if (!script) return;
+  const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
 
-      // Don't split after the very last line
-      if (lineIdx >= script.lines.length - 1) return;
+  // Wait one frame so pdf-pages has a measured width
+  await new Promise(r => requestAnimationFrame(r));
+  const containerWidth = pdfPages.clientWidth || window.innerWidth;
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
-      // Don't add duplicate
-      if (script.boundaries.includes(lineIdx)) return;
+  // Scale is based on the first page width → all pages use same scale
+  const firstPage = await pdf.getPage(1);
+  const baseViewport = firstPage.getViewport({ scale: 1 });
+  const scale = containerWidth / baseViewport.width;
 
-      // Find which section this line is in, insert role for new section
-      const sections = getSections(script);
-      const secIdx = sections.findIndex(s => lineIdx >= s.startLine && lineIdx <= s.endLine);
+  script.pageHeights = [];
+  script.totalHeight = 0;
+  script.renderScale = scale;
 
-      script.boundaries.push(lineIdx);
-      script.boundaries.sort((a, b) => a - b);
+  for (let pn = 1; pn <= pdf.numPages; pn++) {
+    const page = await pdf.getPage(pn);
+    const viewport = page.getViewport({ scale });
 
-      // Insert a new role after the split section; new section gets opposite role
-      const currentRole = script.roles[secIdx] || 'THEM';
-      script.roles.splice(secIdx + 1, 0, currentRole === 'ME' ? 'THEM' : 'ME');
+    const cssW = viewport.width;    // = containerWidth
+    const cssH = viewport.height;
 
-      saveScripts();
-      renderEditor(sid);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(cssW * DPR);
+    canvas.height = Math.round(cssH * DPR);
+    canvas.style.width = '100%';
+    canvas.style.height = cssH + 'px';
+    canvas.style.display = 'block';
+    pdfPages.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    ctx.scale(DPR, DPR);
+    await page.render({ canvasContext: ctx, viewport }).promise;
+
+    script.pageHeights.push(cssH);
+    script.totalHeight += cssH;
+  }
+
+  saveScripts();
+
+  // Build the interaction overlay on top of the canvases
+  const overlay = document.createElement('div');
+  overlay.id = 'pdf-overlay';
+  overlay.className = 'pdf-overlay';
+  pdfPages.appendChild(overlay);
+
+  pdfLoading.classList.add('hidden');
+  renderOverlay(scriptId);
+}
+
+function renderOverlay(scriptId) {
+  const script = state.scripts.find(s => s.id === scriptId);
+  const overlay = document.getElementById('pdf-overlay');
+  if (!overlay || !script || !script.totalHeight) return;
+
+  overlay.innerHTML = '';
+  overlay.style.height = script.totalHeight + 'px';
+
+  const { meLabel, themLabel } = state.settings;
+  const sorted = [...script.splits].sort((a, b) => a - b);
+  const boundaries = [0, ...sorted.map(f => f * script.totalHeight), script.totalHeight];
+
+  // Section regions
+  boundaries.forEach((top, i) => {
+    if (i >= boundaries.length - 1) return;
+    const bottom = boundaries[i + 1];
+    const role = script.roles[i] || 'THEM';
+
+    const regionClass = role === 'ME' ? 'me' : role === 'TRASH' ? 'trash' : 'them';
+    const region = document.createElement('div');
+    region.className = `pdf-section ${regionClass}`;
+    region.style.top = top + 'px';
+    region.style.height = (bottom - top) + 'px';
+
+    // Role toggle pill: ME / THEM / 🗑
+    const pill = document.createElement('div');
+    pill.className = 'section-pill';
+
+    [['ME', meLabel], ['THEM', themLabel], ['TRASH', '🗑']].forEach(([r, label]) => {
+      const btn = document.createElement('button');
+      btn.className = 'section-pill-btn' + (r === role ? ' active' : '');
+      btn.textContent = label;
+      btn.dataset.role = r;
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        script.roles[i] = r;
+        saveScripts();
+        renderOverlay(scriptId);
+      });
+      pill.appendChild(btn);
     });
+
+    region.appendChild(pill);
+    overlay.appendChild(region);
   });
 
-  // Divider click → remove boundary
-  container.querySelectorAll('.section-divider').forEach(el => {
-    el.addEventListener('click', () => {
-      const boundaryLine = +el.dataset.boundary;
-      const sid = el.dataset.script;
-      const script = state.scripts.find(s => s.id === sid);
-      if (!script) return;
+  // Split lines
+  sorted.forEach(fraction => {
+    const y = fraction * script.totalHeight;
+    const line = document.createElement('div');
+    line.className = 'pdf-split-line';
+    line.style.top = y + 'px';
 
-      const idx = script.boundaries.indexOf(boundaryLine);
-      if (idx === -1) return;
-
-      // Find section index of the boundary and merge roles
-      const sorted = [...script.boundaries].sort((a, b) => a - b);
-      const boundaryIdx = sorted.indexOf(boundaryLine);
-
-      script.boundaries.splice(idx, 1);
-      // Remove the role for the section after this boundary
-      script.roles.splice(boundaryIdx + 1, 1);
-
-      saveScripts();
-      renderEditor(sid);
-    });
-  });
-
-  // Role button clicks
-  container.querySelectorAll('.role-btn').forEach(btn => {
-    btn.addEventListener('click', e => {
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'pdf-split-remove';
+    removeBtn.textContent = '✕';
+    removeBtn.title = 'Remove split';
+    removeBtn.addEventListener('click', e => {
       e.stopPropagation();
-      const sid = btn.dataset.script;
-      const secIdx = +btn.dataset.section;
-      const role = btn.dataset.role;
-      const script = state.scripts.find(s => s.id === sid);
-      if (!script) return;
-
-      script.roles[secIdx] = role;
-      saveScripts();
-      renderEditor(sid);
+      removeSplit(scriptId, fraction);
     });
+
+    line.appendChild(removeBtn);
+    overlay.appendChild(line);
   });
+}
+
+function addSplit(scriptId, yPixels) {
+  const script = state.scripts.find(s => s.id === scriptId);
+  if (!script || !script.totalHeight) return;
+
+  const MIN_PX = 30;
+  if (yPixels < MIN_PX || yPixels > script.totalHeight - MIN_PX) return;
+
+  const fraction = yPixels / script.totalHeight;
+
+  // Avoid duplicates or splits too close together
+  const sorted = [...script.splits].sort((a, b) => a - b);
+  const tooClose = sorted.some(f => Math.abs((f - fraction) * script.totalHeight) < MIN_PX);
+  if (tooClose) return;
+
+  // Find section index where this split falls
+  const sectionIdx = sorted.findIndex(f => fraction < f);
+  const insertAt = sectionIdx === -1 ? sorted.length : sectionIdx;
+
+  script.splits.push(fraction);
+  script.splits.sort((a, b) => a - b);
+
+  // New section gets opposite role to the one it splits
+  const currentRole = script.roles[insertAt] || 'THEM';
+  script.roles.splice(insertAt + 1, 0, currentRole === 'ME' ? 'THEM' : 'ME');
+
+  saveScripts();
+  renderOverlay(scriptId);
+}
+
+function removeSplit(scriptId, fraction) {
+  const script = state.scripts.find(s => s.id === scriptId);
+  if (!script) return;
+
+  const sorted = [...script.splits].sort((a, b) => a - b);
+  const idx = sorted.indexOf(fraction);
+  if (idx === -1) return;
+
+  script.splits = script.splits.filter(f => f !== fraction);
+  script.roles.splice(idx + 1, 1);
+
+  saveScripts();
+  renderOverlay(scriptId);
+}
+
+// Extract text from PDF per section (called at completion)
+async function extractSectionTexts(scriptId) {
+  const script = state.scripts.find(s => s.id === scriptId);
+  if (!script) return;
+
+  const pdfData = await loadPDF(scriptId);
+  if (!pdfData) { toast('PDF not found — cannot extract text'); return; }
+
+  const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+  const scale = script.renderScale;
+  const totalH = script.totalHeight;
+
+  // Collect all text items with absolute Y position in rendered space
+  const items = [];
+  let pageOffset = 0;
+
+  for (let pn = 1; pn <= pdf.numPages; pn++) {
+    const page = await pdf.getPage(pn);
+    const viewport = page.getViewport({ scale });
+    const content = await page.getTextContent();
+
+    for (const item of content.items) {
+      if (!item.str.trim()) continue;
+      const [vx, vy] = viewport.convertToViewportPoint(item.transform[4], item.transform[5]);
+      items.push({ str: item.str, x: vx, y: pageOffset + vy });
+    }
+
+    pageOffset += script.pageHeights[pn - 1] || 0;
+  }
+
+  items.sort((a, b) => a.y - b.y || a.x - b.x);
+
+  const sorted = [...script.splits].sort((a, b) => a - b);
+  const boundaries = [0, ...sorted.map(f => f * totalH), totalH];
+
+  script.sections = [];
+  for (let i = 0; i < boundaries.length - 1; i++) {
+    const top = boundaries[i];
+    const bottom = boundaries[i + 1];
+    const sectionItems = items.filter(t => t.y >= top && t.y < bottom);
+
+    // Group into lines by proximity
+    const lines = [];
+    let prevY = null;
+    let line = [];
+
+    for (const item of sectionItems) {
+      if (prevY !== null && Math.abs(item.y - prevY) > 10) {
+        if (line.length) lines.push(line.join(' '));
+        line = [];
+      }
+      line.push(item.str);
+      prevY = item.y;
+    }
+    if (line.length) lines.push(line.join(' '));
+
+    const role = script.roles[i] || 'THEM';
+    if (role !== 'TRASH') {
+      script.sections.push({ role, text: lines.join('\n') });
+    }
+  }
+}
+
+// ── getSections (used by audition & reader) ───────────────────────────────────
+function getSections(script) {
+  if (script.sections) return script.sections;
+  // Fallback for incomplete scripts: return one empty section
+  return [{ role: script.roles[0] || 'THEM', text: '' }];
 }
 
 // ── Audition Flow ─────────────────────────────────────────────────────────────
@@ -539,7 +628,6 @@ function startAuditionFlow(scriptId) {
   const script = state.scripts.find(s => s.id === scriptId);
   if (!script) return;
 
-  // Show QR screen while peer is being set up
   showView('view-qr');
   document.getElementById('qr-code').innerHTML = '';
   document.getElementById('peer-id-display').textContent = '';
@@ -561,25 +649,15 @@ function startAuditionFlow(scriptId) {
     document.getElementById('status-text').textContent = 'Reader connected!';
     document.getElementById('btn-enter-audition').classList.remove('hidden');
 
-    conn.on('open', () => {
-      // Send script to reader
-      conn.send({ type: 'script', data: script });
-    });
-
+    conn.on('open', () => conn.send({ type: 'script', data: script }));
     conn.on('data', msg => handleAuditionCommand(msg));
-    conn.on('close', () => {
-      if (document.getElementById('view-audition').classList.contains('hidden')) return;
-      toast('Reader disconnected');
-    });
+    conn.on('close', () => toast('Reader disconnected'));
   });
 }
 
 function handleAuditionCommand(msg) {
-  if (msg.type === 'show_me') {
-    showMeText(msg.text);
-  } else if (msg.type === 'clear') {
-    clearAudition();
-  }
+  if (msg.type === 'show_me') showMeText(msg.text);
+  else if (msg.type === 'clear') clearAudition();
 }
 
 function enterAuditionMode() {
@@ -596,53 +674,37 @@ function showMeText(text) {
 
   textEl.style.fontSize = state.settings.fontSize + 'px';
   textEl.textContent = text;
-
   blank.style.opacity = '0';
   container.classList.remove('hidden');
 
-  // Reset position
   textEl.style.transform = 'translateY(0)';
-  textEl.style.transition = 'none';
-
-  // Start scroll after a short pause
   setTimeout(() => startScrolling(textEl), 500);
 }
 
 function clearAudition() {
   stopScrolling();
-  const blank = document.getElementById('audition-blank');
-  const container = document.getElementById('audition-text-container');
-  blank.style.opacity = '1';
-  container.classList.add('hidden');
+  document.getElementById('audition-blank').style.opacity = '1';
+  document.getElementById('audition-text-container').classList.add('hidden');
 }
 
 function startScrolling(textEl) {
   stopScrolling();
-  const rate = state.settings.scrollRate; // px/s
+  const rate = state.settings.scrollRate;
   let startTime = null;
-  const startY = 0;
-  // Scroll until text top has moved past the top of the viewport + text height
   const maxScroll = textEl.offsetHeight + window.innerHeight;
 
   function step(ts) {
     if (!startTime) startTime = ts;
     const elapsed = (ts - startTime) / 1000;
-    const y = startY - elapsed * rate;
+    const y = -elapsed * rate;
     textEl.style.transform = `translateY(${y}px)`;
-
-    if (-y < maxScroll) {
-      state.scrollRaf = requestAnimationFrame(step);
-    }
+    if (-y < maxScroll) state.scrollRaf = requestAnimationFrame(step);
   }
-
   state.scrollRaf = requestAnimationFrame(step);
 }
 
 function stopScrolling() {
-  if (state.scrollRaf) {
-    cancelAnimationFrame(state.scrollRaf);
-    state.scrollRaf = null;
-  }
+  if (state.scrollRaf) { cancelAnimationFrame(state.scrollRaf); state.scrollRaf = null; }
 }
 
 // ── Reader Mode ───────────────────────────────────────────────────────────────
@@ -660,8 +722,8 @@ function startReaderMode(script, conn) {
 
   container.innerHTML = sections.map((sec, i) => {
     const label = sec.role === 'ME' ? meLabel : themLabel;
-    const text = sec.lines.filter(l => l.trim()).join('\n');
-    return `<div class="reader-section" data-role="${sec.role}" data-index="${i}" data-section-index="${i}">
+    const text = sec.text || '';
+    return `<div class="reader-section" data-role="${sec.role}" data-index="${i}">
               <div class="reader-section-label">${esc(label)}</div>
               <div class="reader-section-text">${esc(text)}</div>
             </div>`;
@@ -671,17 +733,11 @@ function startReaderMode(script, conn) {
     el.addEventListener('click', () => {
       container.querySelectorAll('.reader-section').forEach(e => e.classList.remove('active'));
       el.classList.add('active');
+      if (!conn) return;
       const role = el.dataset.role;
-      const idx = +el.dataset.sectionIndex;
       const text = el.querySelector('.reader-section-text').textContent;
-
-      if (!conn) return; // local reader mode, no peer
-
-      if (role === 'ME') {
-        conn.send({ type: 'show_me', text, sectionIndex: idx });
-      } else {
-        conn.send({ type: 'clear' });
-      }
+      if (role === 'ME') conn.send({ type: 'show_me', text });
+      else conn.send({ type: 'clear' });
     });
   });
 
@@ -690,64 +746,38 @@ function startReaderMode(script, conn) {
 
 // ── Peer Connection ───────────────────────────────────────────────────────────
 function initPeer(onOpen) {
-  if (state.peer) {
-    try { state.peer.destroy(); } catch {}
-  }
-
+  if (state.peer) { try { state.peer.destroy(); } catch {} }
   const peer = new Peer({ debug: 0 });
   state.peer = peer;
-
-  peer.on('open', id => {
-    state.peerId = id;
-    if (onOpen) onOpen(id);
-  });
-
-  peer.on('error', err => {
-    console.warn('Peer error:', err);
-    toast('Connection error: ' + err.type);
-  });
+  peer.on('open', id => { state.peerId = id; if (onOpen) onOpen(id); });
+  peer.on('error', err => { console.warn('Peer error:', err); toast('Connection error: ' + err.type); });
 }
 
 function generateQR(url) {
   const container = document.getElementById('qr-code');
   container.innerHTML = '';
-  new QRCode(container, {
-    text: url,
-    width: 240,
-    height: 240,
-    colorDark: '#000000',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M,
-  });
+  new QRCode(container, { text: url, width: 240, height: 240,
+    colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
 }
 
-// ── Incoming connection (reader device) ───────────────────────────────────────
-function handleIncomingPeer(peerId, scriptId) {
+function handleIncomingPeer(peerId) {
   toast('Connecting to audition device…');
   initPeer(() => {
     const conn = state.readerConn = state.peer.connect(peerId, { reliable: true });
-
     conn.on('open', () => {
-      toast('Connected to audition device');
+      toast('Connected!');
       document.getElementById('reader-status').className = 'reader-status connected';
       document.getElementById('reader-status').textContent = '●';
     });
-
     conn.on('data', msg => {
-      if (msg.type === 'script') {
-        startReaderMode(msg.data, conn);
-      }
+      if (msg.type === 'script') startReaderMode(msg.data, conn);
     });
-
     conn.on('close', () => {
-      toast('Disconnected from audition device');
+      toast('Disconnected');
       document.getElementById('reader-status').className = 'reader-status disconnected';
       document.getElementById('reader-status').textContent = '●';
     });
-
-    conn.on('error', err => {
-      toast('Connection error: ' + err);
-    });
+    conn.on('error', err => toast('Connection error: ' + err));
   });
 }
 
@@ -758,7 +788,6 @@ function renderNotes() {
     list.innerHTML = '<div class="empty-notes"><span>&#128221;</span><p>No notes yet. Tap + to add one.</p></div>';
     return;
   }
-
   list.innerHTML = state.notes.map(n => `
     <div class="note-card" data-id="${n.id}">
       <div class="note-text">${esc(n.text)}</div>
@@ -775,16 +804,11 @@ function renderNotes() {
       if (note) openNoteModal(note);
     });
   });
-
   list.querySelectorAll('.note-action-btn.delete').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.closest('.note-card').dataset.id;
       const ok = await showConfirm('Delete note', 'Delete this note?');
-      if (ok) {
-        state.notes = state.notes.filter(n => n.id !== id);
-        saveNotes();
-        renderNotes();
-      }
+      if (ok) { state.notes = state.notes.filter(n => n.id !== id); saveNotes(); renderNotes(); }
     });
   });
 }
@@ -802,158 +826,36 @@ function openNoteModal(existing) {
       </div>
     </div>`;
   document.body.appendChild(overlay);
-
   const ta = overlay.querySelector('#note-textarea');
   ta.focus();
-
   overlay.querySelector('.modal-cancel').addEventListener('click', () => overlay.remove());
   overlay.querySelector('.modal-save').addEventListener('click', () => {
     const text = ta.value.trim();
     if (!text) return;
-    if (existing) {
-      existing.text = text;
-    } else {
-      state.notes.unshift({ id: uid(), text, createdAt: Date.now() });
-    }
+    if (existing) existing.text = text;
+    else state.notes.unshift({ id: uid(), text, createdAt: Date.now() });
     saveNotes();
     overlay.remove();
     renderNotes();
   });
-
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-}
-
-// ── Event Bindings ────────────────────────────────────────────────────────────
-function bindEvents() {
-  // Overlay / panel close
-  document.getElementById('overlay').addEventListener('click', closeAllPanels);
-
-  // Hamburger
-  document.getElementById('btn-menu').addEventListener('click', () => openPanel('menu-panel'));
-  document.getElementById('btn-menu-close').addEventListener('click', closeAllPanels);
-
-  // Settings
-  document.getElementById('btn-settings').addEventListener('click', () => {
-    renderSettings();
-    openPanel('settings-panel');
-  });
-  document.getElementById('btn-settings-close').addEventListener('click', closeAllPanels);
-
-  // Menu items
-  document.getElementById('menu-import').addEventListener('click', () => {
-    closeAllPanels();
-    initImportView();
-    showView('view-import');
-  });
-  document.getElementById('menu-notes').addEventListener('click', () => {
-    closeAllPanels();
-    renderNotes();
-    showView('view-notes');
-  });
-
-  // Home → Import (empty state button)
-  document.getElementById('btn-import-empty').addEventListener('click', () => {
-    initImportView();
-    showView('view-import');
-  });
-
-  // Import view
-  document.getElementById('btn-import-back').addEventListener('click', () => {
-    showView('view-home');
-    renderHome();
-  });
-
-  document.getElementById('script-name').addEventListener('input', e => {
-    state.importData.name = e.target.value;
-  });
-
-  document.getElementById('btn-create-script').addEventListener('click', createScript);
-
-  // Editor
-  document.getElementById('btn-editor-back').addEventListener('click', () => {
-    showView('view-home');
-    renderHome();
-  });
-
-  document.getElementById('btn-editor-done').addEventListener('click', () => {
-    const script = state.scripts.find(s => s.id === state.currentScriptId);
-    if (!script) return;
-    const sections = getSections(script);
-    const allAssigned = sections.every(s => s.role);
-    if (!allAssigned) { toast('Assign all sections first'); return; }
-    script.complete = true;
-    saveScripts();
-    toast('Script ready!');
-    showView('view-home');
-    renderHome();
-  });
-
-  // QR view
-  document.getElementById('btn-qr-back').addEventListener('click', () => {
-    if (state.peer) { try { state.peer.destroy(); } catch {} state.peer = null; }
-    showView('view-home');
-    renderHome();
-  });
-
-  document.getElementById('btn-enter-audition').addEventListener('click', enterAuditionMode);
-
-  // Audition view
-  document.getElementById('btn-exit-audition').addEventListener('click', () => {
-    stopScrolling();
-    clearAudition();
-    showView('view-home');
-    renderHome();
-  });
-
-  // Reader view
-  document.getElementById('btn-reader-back').addEventListener('click', () => {
-    if (state.readerConn) { try { state.readerConn.close(); } catch {} state.readerConn = null; }
-    showView('view-home');
-    renderHome();
-  });
-
-  // Notes view
-  document.getElementById('btn-notes-back').addEventListener('click', () => {
-    showView('view-home');
-    renderHome();
-  });
-
-  document.getElementById('btn-add-note').addEventListener('click', () => openNoteModal(null));
-
-  // Update / Reload
-  document.getElementById('btn-apply-update').addEventListener('click', applyUpdate);
-  document.getElementById('menu-reload').addEventListener('click', () => window.location.reload());
-  document.getElementById('menu-check-update').addEventListener('click', checkForUpdates);
 }
 
 // ── Service Worker & Updates ──────────────────────────────────────────────────
 async function registerSW() {
   if (!('serviceWorker' in navigator)) return;
-
   try {
     const reg = await navigator.serviceWorker.register('./sw.js');
     state.swReg = reg;
-
-    // Already a waiting SW on load (e.g. tab was open during an earlier update)
     if (reg.waiting) showUpdateBanner();
-
-    // New SW found while page is open
     reg.addEventListener('updatefound', () => {
       const newSW = reg.installing;
       newSW.addEventListener('statechange', () => {
-        if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-          showUpdateBanner();
-        }
+        if (newSW.state === 'installed' && navigator.serviceWorker.controller) showUpdateBanner();
       });
     });
-  } catch (err) {
-    console.warn('SW registration failed:', err);
-  }
-
-  // When the new SW takes control, reload to use fresh cache
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    window.location.reload();
-  });
+  } catch (err) { console.warn('SW registration failed:', err); }
+  navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
 }
 
 function showUpdateBanner() {
@@ -962,43 +864,99 @@ function showUpdateBanner() {
 
 function applyUpdate() {
   const reg = state.swReg;
-  if (reg && reg.waiting) {
-    reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-  } else {
-    window.location.reload();
-  }
+  if (reg && reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+  else window.location.reload();
 }
 
 async function checkForUpdates() {
   const reg = state.swReg;
   closeAllPanels();
-
-  if (!reg) {
-    window.location.reload();
-    return;
-  }
-
-  // If there's already a waiting SW, just surface the banner
-  if (reg.waiting) {
-    showUpdateBanner();
-    toast('Update ready — tap the banner to install');
-    return;
-  }
-
+  if (!reg) { window.location.reload(); return; }
+  if (reg.waiting) { showUpdateBanner(); toast('Update ready — tap the banner to install'); return; }
   toast('Checking for updates…');
   try {
     await reg.update();
-    // Give the browser a moment to install the new SW if found
     setTimeout(() => {
-      if (reg.waiting) {
-        showUpdateBanner();
-      } else {
-        toast('Already on the latest version ✓');
-      }
+      if (reg.waiting) showUpdateBanner();
+      else toast('Already on the latest version ✓');
     }, 1500);
-  } catch {
-    toast('Could not check for updates');
-  }
+  } catch { toast('Could not check for updates'); }
+}
+
+// ── Event Bindings ────────────────────────────────────────────────────────────
+function bindEvents() {
+  document.getElementById('overlay').addEventListener('click', closeAllPanels);
+
+  document.getElementById('btn-menu').addEventListener('click', () => openPanel('menu-panel'));
+  document.getElementById('btn-menu-close').addEventListener('click', closeAllPanels);
+
+  document.getElementById('btn-settings').addEventListener('click', () => { renderSettings(); openPanel('settings-panel'); });
+  document.getElementById('btn-settings-close').addEventListener('click', closeAllPanels);
+
+  document.getElementById('menu-import').addEventListener('click', () => { closeAllPanels(); initImportView(); showView('view-import'); });
+  document.getElementById('menu-notes').addEventListener('click', () => { closeAllPanels(); renderNotes(); showView('view-notes'); });
+  document.getElementById('btn-import-empty').addEventListener('click', () => { initImportView(); showView('view-import'); });
+
+  document.getElementById('btn-import-back').addEventListener('click', () => { showView('view-home'); renderHome(); });
+  document.getElementById('script-name').addEventListener('input', e => { state.importData.name = e.target.value; });
+  document.getElementById('btn-create-script').addEventListener('click', createScript);
+
+  // Editor
+  document.getElementById('btn-editor-back').addEventListener('click', () => { showView('view-home'); renderHome(); });
+
+  document.getElementById('btn-editor-done').addEventListener('click', async () => {
+    const script = state.scripts.find(s => s.id === state.currentScriptId);
+    if (!script) return;
+    if (!script.splits.length) { toast('Add at least one split first'); return; }
+
+    const btn = document.getElementById('btn-editor-done');
+    btn.textContent = '…';
+    btn.disabled = true;
+
+    await extractSectionTexts(state.currentScriptId);
+    script.complete = true;
+    saveScripts();
+
+    btn.textContent = '✓';
+    btn.disabled = false;
+    toast('Script ready!');
+    showView('view-home');
+    renderHome();
+  });
+
+  // PDF tap-to-split
+  document.getElementById('pdf-pages').addEventListener('click', e => {
+    // Clicks on overlay buttons are already handled with stopPropagation
+    const pdfPages = document.getElementById('pdf-pages');
+    const rect = pdfPages.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    if (state.currentScriptId) addSplit(state.currentScriptId, y);
+  });
+
+  // QR / Audition
+  document.getElementById('btn-qr-back').addEventListener('click', () => {
+    if (state.peer) { try { state.peer.destroy(); } catch {} state.peer = null; }
+    showView('view-home'); renderHome();
+  });
+  document.getElementById('btn-enter-audition').addEventListener('click', enterAuditionMode);
+  document.getElementById('btn-exit-audition').addEventListener('click', () => {
+    stopScrolling(); clearAudition(); showView('view-home'); renderHome();
+  });
+
+  // Reader
+  document.getElementById('btn-reader-back').addEventListener('click', () => {
+    if (state.readerConn) { try { state.readerConn.close(); } catch {} state.readerConn = null; }
+    showView('view-home'); renderHome();
+  });
+
+  // Notes
+  document.getElementById('btn-notes-back').addEventListener('click', () => { showView('view-home'); renderHome(); });
+  document.getElementById('btn-add-note').addEventListener('click', () => openNoteModal(null));
+
+  // Update / Reload
+  document.getElementById('btn-apply-update').addEventListener('click', applyUpdate);
+  document.getElementById('menu-reload').addEventListener('click', () => window.location.reload());
+  document.getElementById('menu-check-update').addEventListener('click', checkForUpdates);
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -1011,31 +969,25 @@ function init() {
   initSettingsListeners();
   registerSW();
 
-  // Display version
   const vText = `v${APP_VERSION}`;
   const vEl = document.getElementById('app-version');
   if (vEl) vEl.textContent = vText;
   const mVer = document.getElementById('menu-version');
   if (mVer) mVer.textContent = `Brando ${vText}`;
 
-  // Check for incoming peer connection from QR scan
   const params = new URLSearchParams(window.location.search);
   const incomingPeer = params.get('peer');
-  const incomingScript = params.get('script');
 
   if (incomingPeer) {
-    // Clean URL so refresh doesn't reconnect
     window.history.replaceState({}, '', window.location.pathname);
-    // Show reader loading screen
     showView('view-reader');
     document.getElementById('reader-title').textContent = 'Connecting…';
     document.getElementById('reader-sections').innerHTML =
       '<div class="empty-notes"><span>&#128279;</span><p>Connecting to audition device…</p></div>';
-    handleIncomingPeer(incomingPeer, incomingScript);
+    handleIncomingPeer(incomingPeer);
     return;
   }
 
-  // Normal home screen
   showView('view-home');
   renderHome();
 }

@@ -46,7 +46,7 @@ if ($remotes -notcontains 'origin') {
 # ── 5. Commit and push ────────────────────────────────────────────────────────
 git add -A
 
-$commitMsg = if ($Message) { "v$newVer — $Message" } else { "v$newVer" }
+$commitMsg = if ($Message) { "v$newVer - $Message" } else { "v$newVer" }
 git commit -m $commitMsg
 
 $branch = git rev-parse --abbrev-ref HEAD

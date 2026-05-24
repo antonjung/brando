@@ -1,4 +1,4 @@
-const VERSION = '1.0.1';
+﻿const VERSION = '1.0.2';
 const CACHE = `brando-v${VERSION}`;
 const ASSETS = [
   '.',
@@ -8,8 +8,7 @@ const ASSETS = [
   'js/app.js',
   'manifest.json',
   'icons/icon.svg',
-  'icons/icon-192.png',
-  'icons/icon-512.png',
+  'icons/brando.png',
 ];
 
 self.addEventListener('install', e => {
