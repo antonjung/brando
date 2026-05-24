@@ -375,8 +375,6 @@ async function renderEditor(scriptId) {
 
   const loading = document.getElementById('line-loading');
   const lineList = document.getElementById('line-list');
-  document.getElementById('select-all-lines').checked = false;
-  document.getElementById('line-role-select').value = '';
 
   if (!script.lines) {
     loading.textContent = 'Extracting lines from PDF…';
