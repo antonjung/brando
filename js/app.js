@@ -481,6 +481,8 @@ function renderOverlay(scriptId) {
     const bottom = boundaries[i + 1];
     const role = script.roles[i] || 'THEM';
 
+    if (role === 'DELETED') return; // gone — no overlay, no pill, PDF shows through
+
     const region = document.createElement('div');
     region.className = `pdf-section ${role === 'ME' ? 'me' : 'them'}`;
     region.style.top = (top * editorZoom) + 'px';
@@ -536,12 +538,12 @@ function addSplit(scriptId, yPixels) {
   const script = state.scripts.find(s => s.id === scriptId);
   if (!script || !script.totalHeight) return;
 
-  const MIN_PX = 30;
+  const MIN_PX = 2;
   if (yPixels < MIN_PX || yPixels > script.totalHeight - MIN_PX) return;
 
   const fraction = yPixels / script.totalHeight;
 
-  // Avoid duplicates or splits too close together
+  // Only block exact duplicate splits
   const sorted = [...script.splits].sort((a, b) => a - b);
   const tooClose = sorted.some(f => Math.abs((f - fraction) * script.totalHeight) < MIN_PX);
   if (tooClose) return;
@@ -583,6 +585,7 @@ function setRoleWithCascade(scriptId, sectionIndex, role) {
   script.roles[sectionIndex] = role;
   let current = role;
   for (let i = sectionIndex + 1; i < script.roles.length; i++) {
+    if (script.roles[i] === 'DELETED') continue;
     current = current === 'ME' ? 'THEM' : 'ME';
     script.roles[i] = current;
   }
@@ -590,22 +593,11 @@ function setRoleWithCascade(scriptId, sectionIndex, role) {
   renderOverlay(scriptId);
 }
 
-// Remove section entirely — removes the bounding split and the role entry
+// Delete section — excluded from script output, invisible in editor, gone for good
 function deleteSection(scriptId, sectionIndex) {
   const script = state.scripts.find(s => s.id === scriptId);
-  if (!script || script.splits.length === 0) return;
-
-  const sorted = [...script.splits].sort((a, b) => a - b);
-
-  if (sectionIndex === 0) {
-    // First section: remove lower boundary, merges into next section
-    script.splits = script.splits.filter(f => f !== sorted[0]);
-  } else {
-    // Any other section: remove upper boundary, merges into previous section
-    script.splits = script.splits.filter(f => f !== sorted[sectionIndex - 1]);
-  }
-
-  script.roles.splice(sectionIndex, 1);
+  if (!script) return;
+  script.roles[sectionIndex] = 'DELETED';
   saveScripts();
   renderOverlay(scriptId);
 }
@@ -667,6 +659,7 @@ async function extractSectionTexts(scriptId) {
     if (line.length) lines.push(line.join(' '));
 
     const role = script.roles[i] || 'THEM';
+    if (role === 'DELETED') continue;
     script.sections.push({ role, text: lines.join('\n') });
   }
 }
