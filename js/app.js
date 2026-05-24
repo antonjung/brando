@@ -487,15 +487,30 @@ function renderOverlay(scriptId) {
   const sorted = [...script.splits].sort((a, b) => a - b);
   const boundaryFracs = [0, ...sorted, 1];
 
-  // ── Section tinted regions ──────────────────────────────────────────────
+  // Fractions whose split line touches a cut section — these lines are hidden
+  const hiddenFracs = new Set();
+  sorted.forEach((frac, idx) => {
+    if ((script.roles[idx] || 'THEM') === 'DELETED' ||
+        (script.roles[idx + 1] || 'THEM') === 'DELETED') {
+      hiddenFracs.add(frac);
+    }
+  });
+
+  // ── Section regions ─────────────────────────────────────────────────────
   boundaryFracs.forEach((topFrac, i) => {
     if (i >= boundaryFracs.length - 1) return;
     const role = script.roles[i] || 'THEM';
-    if (role === 'DELETED') return;
+    const topPx = topFrac * script.totalHeight * editorZoom;
+    const heightPx = (boundaryFracs[i + 1] - topFrac) * script.totalHeight * editorZoom;
+
     const region = document.createElement('div');
-    region.className = `pdf-section ${role === 'ME' ? 'me' : 'them'}`;
-    region.style.top = (topFrac * script.totalHeight * editorZoom) + 'px';
-    region.style.height = ((boundaryFracs[i + 1] - topFrac) * script.totalHeight * editorZoom) + 'px';
+    if (role === 'DELETED') {
+      region.className = 'pdf-section-cut';
+    } else {
+      region.className = `pdf-section ${role === 'ME' ? 'me' : 'them'}`;
+    }
+    region.style.top = topPx + 'px';
+    region.style.height = heightPx + 'px';
     overlay.appendChild(region);
   });
 
@@ -507,6 +522,7 @@ function renderOverlay(scriptId) {
 
   // ── User split lines (draggable, with scissors) ─────────────────────────
   sorted.forEach((fraction, sortedIdx) => {
+    if (hiddenFracs.has(fraction)) return; // line borders a cut section — don't show it
     const sectionIdx = sortedIdx + 1;
     const minFrac = sortedIdx > 0 ? sorted[sortedIdx - 1] + 0.002 : 0.001;
     const maxFrac = sortedIdx < sorted.length - 1 ? sorted[sortedIdx + 1] - 0.002 : 0.999;
@@ -544,11 +560,13 @@ function renderOverlay(scriptId) {
     line.addEventListener('click', e => e.stopPropagation());
     line.addEventListener('contextmenu', e => e.preventDefault());
 
-    const btn = document.createElement('button');
-    btn.className = 'split-scissors-btn';
-    btn.innerHTML = icon('scissors', 15);
-    btn.addEventListener('click', e => { e.stopPropagation(); showLineMenu(btn, scriptId, sectionIdx); });
-    line.appendChild(btn);
+    if ((script.roles[sectionIdx] || 'THEM') !== 'DELETED') {
+      const btn = document.createElement('button');
+      btn.className = 'split-scissors-btn';
+      btn.innerHTML = icon('scissors', 15);
+      btn.addEventListener('click', e => { e.stopPropagation(); showLineMenu(btn, scriptId, sectionIdx); });
+      line.appendChild(btn);
+    }
 
     overlay.appendChild(line);
   });
@@ -658,25 +676,11 @@ function setRoleWithCascade(scriptId, sectionIndex, role) {
   renderOverlay(scriptId);
 }
 
-// Delete section — remove its bounding split and role; it is gone entirely
+// Cut section — mark as excluded; covered with solid block everywhere, skipped in output
 function deleteSection(scriptId, sectionIndex) {
   const script = state.scripts.find(s => s.id === scriptId);
-  if (!script || script.splits.length === 0) return;
-
-  const sorted = [...script.splits].sort((a, b) => a - b);
-
-  let splitToRemove;
-  if (sectionIndex === 0) {
-    // First section: remove the split below it; next section becomes new first
-    splitToRemove = sorted[0];
-    script.roles.splice(0, 1);
-  } else {
-    // Any other section: remove the split above it; it collapses into the section before
-    splitToRemove = sorted[sectionIndex - 1];
-    script.roles.splice(sectionIndex, 1);
-  }
-
-  script.splits = script.splits.filter(f => f !== splitToRemove);
+  if (!script) return;
+  script.roles[sectionIndex] = 'DELETED';
   saveScripts();
   renderOverlay(scriptId);
 }
