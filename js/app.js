@@ -394,12 +394,6 @@ async function renderEditor(scriptId) {
   }
 
   loading.classList.add('hidden');
-
-  // Update dropdown labels to match current settings
-  const sel = document.getElementById('line-role-select');
-  sel.options[1].textContent = state.settings.meLabel;
-  sel.options[2].textContent = state.settings.themLabel;
-
   renderLineList(scriptId);
 }
 
@@ -413,15 +407,25 @@ function renderLineList(scriptId) {
     .map((line, i) => ({ line, i }))
     .filter(({ line }) => line.role !== 'CUT')
     .map(({ line, i }) => {
-      const rc = line.role === 'ME' ? 'me' : 'them';
+      const rc    = line.role === 'ME' ? 'me' : 'them';
       const label = line.role === 'ME' ? meLabel : themLabel;
       return `
         <div class="line-row ${rc}" data-index="${i}">
-          <input type="checkbox" class="line-check" data-index="${i}">
           <span class="line-text">${esc(line.text)}</span>
           <span class="line-role-badge ${rc}">${esc(label)}</span>
+          <button class="line-btn line-btn-a" data-index="${i}" data-role="ME">A</button>
+          <button class="line-btn line-btn-b" data-index="${i}" data-role="THEM">B</button>
+          <button class="line-btn line-btn-trash" data-index="${i}" data-role="CUT">${icon('trash-2', 13)}</button>
         </div>`;
     }).join('');
+
+  lineList.querySelectorAll('.line-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      script.lines[+btn.dataset.index].role = btn.dataset.role;
+      saveScripts();
+      renderLineList(scriptId);
+    });
+  });
 }
 
 // ── getSections (audition & reader) ──────────────────────────────────────────
@@ -756,26 +760,6 @@ function bindEvents() {
     toast('Script ready!');
     showView('view-home');
     renderHome();
-  });
-
-  document.getElementById('select-all-lines').addEventListener('change', e => {
-    document.querySelectorAll('.line-check').forEach(cb => cb.checked = e.target.checked);
-  });
-
-  document.getElementById('line-role-select').addEventListener('change', e => {
-    const role = e.target.value;
-    if (!role || !state.currentScriptId) { e.target.value = ''; return; }
-    const script = state.scripts.find(s => s.id === state.currentScriptId);
-    if (!script || !script.lines) return;
-
-    const checked = [...document.querySelectorAll('.line-check:checked')];
-    if (!checked.length) { toast('Select lines first'); e.target.value = ''; return; }
-
-    checked.forEach(cb => { script.lines[+cb.dataset.index].role = role; });
-    saveScripts();
-    renderLineList(state.currentScriptId);
-    e.target.value = '';
-    document.getElementById('select-all-lines').checked = false;
   });
 
   // QR / Audition
