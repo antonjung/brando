@@ -1217,10 +1217,13 @@ html, body {
 }
 
 .pill-delete {
-  border-color: transparent !important;
-  opacity: 0.5;
+  border-color: rgba(220, 60, 60, 0.6) !important;
+  color: #ff7070 !important;
+  background: rgba(180, 30, 30, 0.35) !important;
+  opacity: 1;
 }
-.pill-delete:active { opacity: 1; }
+.pill-delete svg { stroke-width: 3; }
+.pill-delete:active { background: rgba(220, 60, 60, 0.6) !important; }
 
 /* Split line */
 .pdf-split-line {

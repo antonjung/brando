@@ -366,8 +366,6 @@ async function createScript() {
   toast('Tap the PDF to add splits');
 }
 
-// Tracks which section is showing the inline delete confirmation
-let confirmingDelete = null; // { scriptId, sectionIndex }
 
 // ── PDF Editor ────────────────────────────────────────────────────────────────
 async function renderEditor(scriptId) {
@@ -482,78 +480,30 @@ function renderOverlay(scriptId) {
     if (i >= boundaries.length - 1) return;
     const bottom = boundaries[i + 1];
     const role = script.roles[i] || 'THEM';
-    const isDeleted = role === 'DELETED';
-    const isConfirming = confirmingDelete &&
-      confirmingDelete.scriptId === scriptId &&
-      confirmingDelete.sectionIndex === i;
 
-    const regionClass = isDeleted ? 'deleted' : role === 'ME' ? 'me' : 'them';
     const region = document.createElement('div');
-    region.className = `pdf-section ${regionClass}`;
+    region.className = `pdf-section ${role === 'ME' ? 'me' : 'them'}`;
     region.style.top = (top * editorZoom) + 'px';
     region.style.height = ((bottom - top) * editorZoom) + 'px';
 
     const pill = document.createElement('div');
     pill.className = 'section-pill';
 
-    if (isConfirming) {
-      // Inline confirmation
-      const label = document.createElement('span');
-      label.className = 'pill-confirm-label';
-      label.textContent = 'Exclude?';
-      pill.appendChild(label);
+    [['ME', meLabel], ['THEM', themLabel]].forEach(([r, lbl]) => {
+      const btn = document.createElement('button');
+      btn.className = 'section-pill-btn' + (r === role ? ' active' : '');
+      btn.textContent = lbl;
+      btn.dataset.role = r;
+      btn.addEventListener('click', e => { e.stopPropagation(); setRoleWithCascade(scriptId, i, r); });
+      pill.appendChild(btn);
+    });
 
-      const yes = document.createElement('button');
-      yes.className = 'section-pill-btn pill-confirm-yes';
-      yes.textContent = '✓ Yes';
-      yes.addEventListener('click', e => { e.stopPropagation(); deleteSection(scriptId, i); });
-      pill.appendChild(yes);
-
-      const no = document.createElement('button');
-      no.className = 'section-pill-btn pill-confirm-no';
-      no.textContent = '✗ No';
-      no.addEventListener('click', e => {
-        e.stopPropagation();
-        confirmingDelete = null;
-        renderOverlay(scriptId);
-      });
-      pill.appendChild(no);
-
-    } else if (isDeleted) {
-      // Restore pill for deleted sections
-      const label = document.createElement('span');
-      label.className = 'pill-excluded-label';
-      label.textContent = 'Excluded';
-      pill.appendChild(label);
-
-      [['ME', meLabel], ['THEM', themLabel]].forEach(([r, label]) => {
-        const btn = document.createElement('button');
-        btn.className = 'section-pill-btn';
-        btn.textContent = label;
-        btn.addEventListener('click', e => { e.stopPropagation(); setRoleWithCascade(scriptId, i, r); });
-        pill.appendChild(btn);
-      });
-
-    } else {
-      // Normal pill: ME / THEM / 🗑
-      [['ME', meLabel], ['THEM', themLabel]].forEach(([r, label]) => {
-        const btn = document.createElement('button');
-        btn.className = 'section-pill-btn' + (r === role ? ' active' : '');
-        btn.textContent = label;
-        btn.dataset.role = r;
-        btn.addEventListener('click', e => { e.stopPropagation(); setRoleWithCascade(scriptId, i, r); });
-        pill.appendChild(btn);
-      });
-
+    if (script.splits.length > 0) {
       const delBtn = document.createElement('button');
       delBtn.className = 'section-pill-btn pill-delete';
-      delBtn.innerHTML = icon('trash-2', 13);
-      delBtn.title = 'Exclude section';
-      delBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        confirmingDelete = { scriptId, sectionIndex: i };
-        renderOverlay(scriptId);
-      });
+      delBtn.innerHTML = icon('trash-2', 15);
+      delBtn.title = 'Delete section';
+      delBtn.addEventListener('click', e => { e.stopPropagation(); deleteSection(scriptId, i); });
       pill.appendChild(delBtn);
     }
 
@@ -626,15 +576,13 @@ function removeSplit(scriptId, fraction) {
   renderOverlay(scriptId);
 }
 
-// Set a role and cascade alternating ME/THEM to subsequent non-deleted sections
+// Set a role and cascade alternating ME/THEM to subsequent sections
 function setRoleWithCascade(scriptId, sectionIndex, role) {
   const script = state.scripts.find(s => s.id === scriptId);
   if (!script) return;
-  confirmingDelete = null;
   script.roles[sectionIndex] = role;
   let current = role;
   for (let i = sectionIndex + 1; i < script.roles.length; i++) {
-    if (script.roles[i] === 'DELETED') continue;
     current = current === 'ME' ? 'THEM' : 'ME';
     script.roles[i] = current;
   }
@@ -642,12 +590,22 @@ function setRoleWithCascade(scriptId, sectionIndex, role) {
   renderOverlay(scriptId);
 }
 
-// Mark section as excluded — splits stay, section is just skipped in output
+// Remove section entirely — removes the bounding split and the role entry
 function deleteSection(scriptId, sectionIndex) {
   const script = state.scripts.find(s => s.id === scriptId);
-  if (!script) return;
-  confirmingDelete = null;
-  script.roles[sectionIndex] = 'DELETED';
+  if (!script || script.splits.length === 0) return;
+
+  const sorted = [...script.splits].sort((a, b) => a - b);
+
+  if (sectionIndex === 0) {
+    // First section: remove lower boundary, merges into next section
+    script.splits = script.splits.filter(f => f !== sorted[0]);
+  } else {
+    // Any other section: remove upper boundary, merges into previous section
+    script.splits = script.splits.filter(f => f !== sorted[sectionIndex - 1]);
+  }
+
+  script.roles.splice(sectionIndex, 1);
   saveScripts();
   renderOverlay(scriptId);
 }
@@ -709,9 +667,7 @@ async function extractSectionTexts(scriptId) {
     if (line.length) lines.push(line.join(' '));
 
     const role = script.roles[i] || 'THEM';
-    if (role !== 'DELETED') {
-      script.sections.push({ role, text: lines.join('\n') });
-    }
+    script.sections.push({ role, text: lines.join('\n') });
   }
 }
 
