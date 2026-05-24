@@ -56,12 +56,19 @@
   --them-color: #4a1500;
   --border: #c8b888;
   --panel-bg: #fdfaf0;
-  --font: 'OpenDyslexic', 'Comic Sans MS', cursive;
-  font-size: 110%;
+  --font: 'Atkinson Hyperlegible', Arial, sans-serif;
   letter-spacing: 0.05em;
-  line-height: 1.7;
-  word-spacing: 0.1em;
+  word-spacing: 0.15em;
+  line-height: 1.8;
 }
+
+/* Bump readable content sizes — px values don't inherit from body font-size */
+[data-theme="dyslexia"] .line-text,
+[data-theme="dyslexia"] .reader-section-text,
+[data-theme="dyslexia"] .note-text { font-size: 17px; line-height: 1.9; }
+
+[data-theme="dyslexia"] .script-card-title { font-size: 18px; }
+[data-theme="dyslexia"] .script-card-meta  { font-size: 14px; }
 
 html, body {
   height: 100%;
