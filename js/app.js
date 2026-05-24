@@ -896,6 +896,7 @@ function enterAuditionMode() {
   showView('view-audition');
   document.getElementById('audition-blank').style.opacity = '1';
   document.getElementById('audition-text-container').classList.add('hidden');
+  document.getElementById('footer-nav').classList.add('hidden');
 }
 
 function showMeText(text) {
@@ -1135,6 +1136,9 @@ function bindEvents() {
   document.getElementById('btn-import-confirm').addEventListener('click', createScript);
 
   // Footer nav
+  document.getElementById('btn-footer-home').addEventListener('click', () => {
+    showView('view-home'); renderHome();
+  });
   document.getElementById('btn-footer-edit').addEventListener('click', async () => {
     if (!state.currentScriptId) return;
     showView('view-editor');
@@ -1205,7 +1209,9 @@ function bindEvents() {
   });
   document.getElementById('btn-enter-audition').addEventListener('click', enterAuditionMode);
   document.getElementById('btn-exit-audition').addEventListener('click', () => {
-    stopScrolling(); clearAudition(); showView('view-home'); renderHome();
+    stopScrolling(); clearAudition();
+    document.getElementById('footer-nav').classList.remove('hidden');
+    showView('view-home'); renderHome();
   });
 
   // Reader
@@ -1241,6 +1247,11 @@ function init() {
   if (vEl) vEl.textContent = vText;
   const mVer = document.getElementById('menu-version');
   if (mVer) mVer.textContent = `Brando ${vText}`;
+
+  // Auto-select most recent script so footer buttons are immediately usable
+  if (state.scripts.length > 0 && !state.currentScriptId) {
+    state.currentScriptId = state.scripts[0].id;
+  }
 
   const params = new URLSearchParams(window.location.search);
   const incomingPeer = params.get('peer');

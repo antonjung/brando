@@ -82,12 +82,18 @@ html, body {
 /* ── Views ────────────────────────────────── */
 .view {
   position: absolute;
-  inset: 0;
+  top: 0; left: 0; right: 0;
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   background: var(--bg);
   transition: opacity 0.2s, transform 0.2s;
   overflow: hidden;
+}
+
+/* Audition is fullscreen — no footer needed */
+#view-audition {
+  bottom: 0;
 }
 
 .view.hidden {
@@ -1000,12 +1006,14 @@ html, body {
 
 /* ── Footer Nav ───────────────────────────── */
 .footer-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 100;
   display: flex;
   height: calc(56px + env(safe-area-inset-bottom, 0px));
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background: var(--surface);
   border-top: 1px solid var(--border);
-  flex-shrink: 0;
 }
 
 .footer-btn {
@@ -1089,15 +1097,14 @@ html, body {
 }
 
 .app-version-badge {
-  position: fixed;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 2px);
+  position: absolute;
+  bottom: env(safe-area-inset-bottom, 2px);
   left: 50%;
   transform: translateX(-50%);
-  font-size: 9px;
+  font-size: 8px;
   color: var(--text-muted);
   opacity: 0.4;
   pointer-events: none;
-  z-index: 5;
   letter-spacing: 0.05em;
   white-space: nowrap;
 }
