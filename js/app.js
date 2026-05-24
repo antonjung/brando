@@ -803,6 +803,7 @@ function bindEvents() {
 
   // QR / Audition
   document.getElementById('btn-enter-audition').addEventListener('click', enterAuditionMode);
+  document.getElementById('btn-audition-settings').addEventListener('click', () => { renderSettings(); openPanel('settings-panel'); });
   document.getElementById('btn-exit-audition').addEventListener('click', () => {
     stopScrolling(); clearAudition();
     document.getElementById('footer-nav').classList.remove('hidden');

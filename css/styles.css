@@ -571,7 +571,7 @@ html, body {
   width: 90%;
   text-align: center;
   color: #fff;
-  font-size: 32px;
+  font-size: var(--content-font-size, 32px);
   line-height: 1.6;
   position: relative;
 }
@@ -593,6 +593,11 @@ html, body {
 }
 
 .exit-btn:active { background: rgba(255,255,255,0.25); }
+
+.audition-settings-btn {
+  right: auto;
+  left: 16px;
+}
 
 /* ── Reader Mode ──────────────────────────── */
 .reader-sections {
