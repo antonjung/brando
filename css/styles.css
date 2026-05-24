@@ -178,6 +178,7 @@ html, body {
 /* ── Home ─────────────────────────────────── */
 .script-list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 12px;
   display: flex;
@@ -341,6 +342,7 @@ html, body {
 /* ── Line Editor ──────────────────────────── */
 .line-list-wrap {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -547,6 +549,7 @@ html, body {
 /* ── Reader Mode ──────────────────────────── */
 .reader-sections {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 0;
   display: flex;
@@ -599,6 +602,7 @@ html, body {
 /* ── Notes ────────────────────────────────── */
 .notes-list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 12px;
   display: flex;
