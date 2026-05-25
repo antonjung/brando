@@ -50,6 +50,9 @@ function loadNotes() {
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
+let _scanStream = null;
+let _scanRaf = null;
+
 // ── IndexedDB (PDF storage) ──────────────────────────────────────────────────
 let _db = null;
 function openDB() {
@@ -92,10 +95,11 @@ async function deletePDF(id) {
 // ── Navigation ───────────────────────────────────────────────────────────────
 const VIEW_TITLES = {
   'view-home': 'Brando', 'view-import': 'Create Script', 'view-editor': 'Edit Script',
-  'view-qr': 'Connect Reader', 'view-reader': 'Reading', 'view-notes': 'Notes',
+  'view-qr': 'Connect Reader', 'view-scan': 'Scan QR', 'view-reader': 'Reading', 'view-notes': 'Notes',
 };
 
 function showView(id) {
+  if (id !== 'view-scan') stopScan();
   document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
   closeAllPanels();
@@ -618,6 +622,58 @@ function startReaderMode(script, conn) {
   });
 }
 
+// ── QR Scanner ────────────────────────────────────────────────────────────────
+function stopScan() {
+  if (_scanRaf) { cancelAnimationFrame(_scanRaf); _scanRaf = null; }
+  if (_scanStream) { _scanStream.getTracks().forEach(t => t.stop()); _scanStream = null; }
+}
+
+async function startScanMode() {
+  showView('view-scan');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    toast('Camera not available on this device');
+    showView('view-home'); renderHome(); return;
+  }
+  if (typeof jsQR === 'undefined') {
+    toast('QR scanner not loaded yet — try again');
+    showView('view-home'); renderHome(); return;
+  }
+  try {
+    _scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const video = document.getElementById('scan-video');
+    video.srcObject = _scanStream;
+    await video.play();
+    const canvas = document.getElementById('scan-canvas');
+    const ctx = canvas.getContext('2d');
+    function tick() {
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+        if (code) {
+          const m = code.data.match(/[?&]peer=([^&]+)/);
+          if (m) {
+            stopScan();
+            showView('view-reader');
+            document.getElementById('main-title').textContent = 'Connecting…';
+            document.getElementById('reader-sections').innerHTML =
+              '<div class="empty-notes"><span>&#128279;</span><p>Connecting to audition device…</p></div>';
+            handleIncomingPeer(m[1]);
+            return;
+          }
+        }
+      }
+      _scanRaf = requestAnimationFrame(tick);
+    }
+    _scanRaf = requestAnimationFrame(tick);
+  } catch (err) {
+    toast('Camera access denied — check permissions');
+    showView('view-home'); renderHome();
+  }
+}
+
 // ── Peer Connection ───────────────────────────────────────────────────────────
 function initPeer(onOpen) {
   if (state.peer) { try { state.peer.destroy(); } catch {} }
@@ -807,6 +863,7 @@ function bindEvents() {
     const script = state.scripts.find(s => s.id === state.currentScriptId);
     if (script) startReaderMode(script, null);
   });
+  document.getElementById('btn-footer-scan').addEventListener('click', startScanMode);
 
   // Editor
   document.getElementById('btn-editor-done').addEventListener('click', () => {
