@@ -361,13 +361,9 @@ function showImportError(title, details) {
 async function handleFile(file) {
   const debugInfo = [];
   try {
-    debugInfo.push(`File: ${file ? file.name : 'null'}`);
-    debugInfo.push(`Type: "${file ? file.type : ''}" Size: ${file ? file.size : 0}`);
-    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-    if (!file || !isPdf) {
-      showImportError('Not a PDF', debugInfo.join('\n'));
-      return;
-    }
+    if (!file) { showImportError('No file', 'file was null'); return; }
+    debugInfo.push(`File: ${file.name}`);
+    debugInfo.push(`Type: "${file.type}"  Size: ${file.size}`);
     document.getElementById('pdf-input-global').value = '';
 
     const name = file.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ');
