@@ -668,8 +668,9 @@ function stopScan() {
 async function startScanMode() {
   showView('view-scan');
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    toast('Camera not available on this device');
-    showView('view-home'); renderHome(); return;
+    document.getElementById('scan-camera-section').classList.add('hidden');
+    document.getElementById('scan-manual-section').classList.remove('hidden');
+    return;
   }
   if (typeof jsQR === 'undefined') {
     toast('QR scanner not loaded yet — try again');
@@ -909,6 +910,19 @@ function bindEvents() {
     if (script) startReaderMode(script, null);
   });
   document.getElementById('btn-footer-scan').addEventListener('click', startScanMode);
+  document.getElementById('scan-manual-connect').addEventListener('click', () => {
+    const raw = document.getElementById('scan-manual-input').value.trim();
+    if (!raw) return;
+    const m = raw.match(/[?&]peer=([^&]+)/);
+    const peerId = m ? m[1] : raw;
+    if (!peerId) { toast('Invalid URL or peer ID'); return; }
+    stopScan();
+    showView('view-reader');
+    document.getElementById('main-title').textContent = 'Connecting…';
+    document.getElementById('reader-sections').innerHTML =
+      '<div class="empty-notes"><span>&#128279;</span><p>Connecting to audition device…</p></div>';
+    handleIncomingPeer(peerId);
+  });
 
   // Editor
   document.getElementById('btn-editor-done').addEventListener('click', () => {

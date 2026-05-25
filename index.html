@@ -100,13 +100,18 @@
 
   <!-- ── Scan ─────────────────────────────── -->
   <div id="view-scan" class="view hidden">
-    <div class="scan-container">
+    <div id="scan-camera-section" class="scan-container">
       <video id="scan-video" playsinline autoplay muted></video>
       <canvas id="scan-canvas" hidden></canvas>
       <div class="scan-overlay">
         <div class="scan-frame"></div>
         <p class="scan-hint">Point at the QR code on the other device</p>
       </div>
+    </div>
+    <div id="scan-manual-section" class="scan-manual hidden">
+      <p class="scan-manual-hint">Camera not available.<br>Paste the connection URL or peer ID shown on the other device.</p>
+      <input type="text" id="scan-manual-input" placeholder="Paste URL or peer ID…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <button class="btn-primary" id="scan-manual-connect">Connect</button>
     </div>
   </div>
 
