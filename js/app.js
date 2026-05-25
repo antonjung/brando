@@ -18,7 +18,7 @@ function icon(name, size = 16) {
 const state = {
   scripts: [],
   notes: [],
-  settings: { scrollRate: 40, meFontSize: 32, themFontSize: 16, theme: 'dark', meLabel: 'ME', themLabel: 'THEM' },
+  settings: { scrollRate: 40, meFontSize: 32, themFontSize: 16, theme: 'dark', meLabel: 'Actor', themLabel: 'Reader' },
   importData: { name: '', arrayBuffer: null },
   currentScriptId: null,
   peer: null,
@@ -217,12 +217,12 @@ function initSettingsListeners() {
     });
   });
   document.getElementById('setting-me').addEventListener('change', e => {
-    state.settings.meLabel = e.target.value.trim() || 'ME';
+    state.settings.meLabel = e.target.value.trim() || 'Actor';
     e.target.value = state.settings.meLabel;
     saveSettings();
   });
   document.getElementById('setting-them').addEventListener('change', e => {
-    state.settings.themLabel = e.target.value.trim() || 'THEM';
+    state.settings.themLabel = e.target.value.trim() || 'Reader';
     e.target.value = state.settings.themLabel;
     saveSettings();
   });
