@@ -941,7 +941,15 @@ function bindEvents() {
 
   // Update / Reload
   document.getElementById('btn-apply-update').addEventListener('click', applyUpdate);
-  document.getElementById('menu-reload').addEventListener('click', () => window.location.reload());
+  document.getElementById('menu-reload').addEventListener('click', async () => {
+    closeAllPanels();
+    const reg = state.swReg;
+    if (reg) {
+      try { await reg.update(); } catch {}
+      if (reg.waiting) { reg.waiting.postMessage({ type: 'SKIP_WAITING' }); return; }
+    }
+    window.location.reload();
+  });
   document.getElementById('menu-check-update').addEventListener('click', checkForUpdates);
 }
 
