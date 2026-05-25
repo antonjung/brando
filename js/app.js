@@ -343,17 +343,44 @@ function triggerImport() {
   inp.click();
 }
 
+function showImportError(title, details) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>${esc(title)}</h3>
+      <pre style="font-size:12px;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;background:var(--surface2);padding:8px;border-radius:6px;text-align:left">${esc(details)}</pre>
+      <div class="modal-actions">
+        <button class="btn-primary modal-ok">OK</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('.modal-ok').addEventListener('click', () => overlay.remove());
+}
+
 async function handleFile(file) {
+  const debugInfo = [];
   try {
+    debugInfo.push(`File: ${file ? file.name : 'null'}`);
+    debugInfo.push(`Type: "${file ? file.type : ''}" Size: ${file ? file.size : 0}`);
     const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-    if (!file || !isPdf) { toast('Please select a PDF file'); return; }
+    if (!file || !isPdf) {
+      showImportError('Not a PDF', debugInfo.join('\n'));
+      return;
+    }
     document.getElementById('pdf-input-global').value = '';
 
     const name = file.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ');
 
     let buf;
-    try { buf = await file.arrayBuffer(); }
-    catch { toast('Failed to read PDF — try another file.'); return; }
+    try {
+      buf = await file.arrayBuffer();
+      debugInfo.push(`Buffer: ${buf.byteLength} bytes`);
+    } catch (e) {
+      debugInfo.push(`arrayBuffer error: ${e}`);
+      showImportError('Failed to read PDF', debugInfo.join('\n'));
+      return;
+    }
 
     const script = {
       id: uid(), name, lines: null, sections: null,
@@ -361,7 +388,7 @@ async function handleFile(file) {
     };
 
     state.scripts.unshift(script);
-    try { saveScripts(); } catch (e) { console.warn('saveScripts failed:', e); }
+    try { saveScripts(); } catch (e) { debugInfo.push(`saveScripts error: ${e}`); }
     state.currentScriptId = script.id;
     showView('view-home');
     renderHome();
@@ -369,7 +396,8 @@ async function handleFile(file) {
 
     savePDF(script.id, buf).catch(err => console.warn('PDF storage failed:', err));
   } catch (err) {
-    toast('Import failed: ' + (err && err.message ? err.message : String(err)));
+    debugInfo.push(`Unexpected error: ${err}`);
+    showImportError('Import failed', debugInfo.join('\n'));
     console.error('handleFile error:', err);
   }
 }
