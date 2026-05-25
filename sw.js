@@ -1,4 +1,4 @@
-﻿const VERSION = '1.0.45';
+﻿const VERSION = '1.0.46';
 const CACHE = `brando-v${VERSION}`;
 const ASSETS = [
   '.',
@@ -13,7 +13,7 @@ const ASSETS = [
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE).then(c => c.addAll(ASSETS))
   );
 });
 

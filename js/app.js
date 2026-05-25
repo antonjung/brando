@@ -837,8 +837,12 @@ function showUpdateBanner() { document.getElementById('update-banner').classList
 
 function applyUpdate() {
   const reg = state.swReg;
-  if (reg && reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-  else window.location.reload();
+  if (reg && reg.waiting) {
+    reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    setTimeout(() => window.location.reload(), 500);
+  } else {
+    window.location.reload();
+  }
 }
 
 async function checkForUpdates() {
