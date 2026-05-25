@@ -18,7 +18,7 @@ function icon(name, size = 16) {
 const state = {
   scripts: [],
   notes: [],
-  settings: { scrollRate: 40, fontSize: 16, theme: 'dark', meLabel: 'ME', themLabel: 'THEM' },
+  settings: { scrollRate: 40, meFontSize: 32, themFontSize: 16, theme: 'dark', meLabel: 'ME', themLabel: 'THEM' },
   importData: { name: '', arrayBuffer: null },
   currentScriptId: null,
   peer: null,
@@ -170,16 +170,21 @@ function applyTheme(theme) {
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────
-function applyFontSize(size) {
-  document.body.style.setProperty('--content-font-size', size + 'px');
+function applyFontSizes() {
+  const me = state.settings.meFontSize || 32;
+  const them = state.settings.themFontSize || 16;
+  document.body.style.setProperty('--me-font-size', me + 'px');
+  document.body.style.setProperty('--them-font-size', them + 'px');
 }
 
 function renderSettings() {
-  const { scrollRate, fontSize, meLabel, themLabel } = state.settings;
+  const { scrollRate, meFontSize, themFontSize, meLabel, themLabel } = state.settings;
   document.getElementById('setting-scroll').value = scrollRate;
   document.getElementById('setting-scroll-val').textContent = `${scrollRate} px/s`;
-  document.getElementById('setting-font-size').value = fontSize || 16;
-  document.getElementById('setting-font-size-val').textContent = `${fontSize || 16}px`;
+  document.getElementById('setting-me-font-size').value = meFontSize || 32;
+  document.getElementById('setting-me-font-size-val').textContent = `${meFontSize || 32}px`;
+  document.getElementById('setting-them-font-size').value = themFontSize || 16;
+  document.getElementById('setting-them-font-size-val').textContent = `${themFontSize || 16}px`;
   document.getElementById('setting-me').value = meLabel;
   document.getElementById('setting-them').value = themLabel;
   applyTheme(state.settings.theme);
@@ -192,10 +197,16 @@ function initSettingsListeners() {
     saveSettings();
   });
 
-  document.getElementById('setting-font-size').addEventListener('input', e => {
-    state.settings.fontSize = +e.target.value;
-    document.getElementById('setting-font-size-val').textContent = `${e.target.value}px`;
-    applyFontSize(+e.target.value);
+  document.getElementById('setting-me-font-size').addEventListener('input', e => {
+    state.settings.meFontSize = +e.target.value;
+    document.getElementById('setting-me-font-size-val').textContent = `${e.target.value}px`;
+    applyFontSizes();
+    saveSettings();
+  });
+  document.getElementById('setting-them-font-size').addEventListener('input', e => {
+    state.settings.themFontSize = +e.target.value;
+    document.getElementById('setting-them-font-size-val').textContent = `${e.target.value}px`;
+    applyFontSizes();
     saveSettings();
   });
   document.querySelectorAll('.theme-btn').forEach(btn => {
@@ -522,7 +533,7 @@ function showMeText(text) {
   const textEl = document.getElementById('audition-text');
   const blank = document.getElementById('audition-blank');
   textEl.textContent = text;
-  textEl.style.fontSize = '';  // reset to --content-font-size before each line
+  textEl.style.fontSize = '';  // reset to --me-font-size before each line
   textEl.style.transform = 'translateY(0)';
   blank.style.opacity = '0';
   container.classList.remove('hidden');
@@ -910,7 +921,7 @@ function init() {
   loadSettings();
   loadNotes();
   applyTheme(state.settings.theme);
-  applyFontSize(state.settings.fontSize || 16);
+  applyFontSizes();
   bindEvents();
   initSettingsListeners();
   registerSW();

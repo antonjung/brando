@@ -566,7 +566,7 @@ html, body {
   width: 90%;
   text-align: center;
   color: #fff;
-  font-size: var(--content-font-size, 32px);
+  font-size: var(--me-font-size, 32px);
   line-height: 1.6;
   position: relative;
 }
@@ -676,7 +676,7 @@ html, body {
 
 .reader-section-text {
   padding: 4px 24px 14px;
-  font-size: var(--content-font-size, 16px);
+  font-size: var(--them-font-size, 16px);
   line-height: 1.6;
   white-space: pre-wrap;
   text-align: center;
