@@ -491,15 +491,15 @@ function startAuditionFlow(scriptId) {
 
   state.peer.on('connection', conn => {
     state.conn = conn;
-    document.getElementById('status-dot').className = 'status-dot connected';
-    document.getElementById('status-text').textContent = 'Reader connected!';
-    document.getElementById('btn-enter-audition').classList.remove('hidden');
-    conn.on('open', () => conn.send({
-      type: 'script',
-      data: script,
-      meLabel: state.settings.meLabel,
-      themLabel: state.settings.themLabel,
-    }));
+    conn.on('open', () => {
+      conn.send({
+        type: 'script',
+        data: script,
+        meLabel: state.settings.meLabel,
+        themLabel: state.settings.themLabel,
+      });
+      enterAuditionMode();
+    });
     conn.on('data', msg => handleAuditionCommand(msg));
     conn.on('close', () => toast('Reader disconnected'));
   });

@@ -1,4 +1,4 @@
-﻿const VERSION = '1.0.36';
+﻿const VERSION = '1.0.37';
 const CACHE = `brando-v${VERSION}`;
 const ASSETS = [
   '.',
