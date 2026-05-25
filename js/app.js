@@ -345,7 +345,8 @@ function triggerImport() {
 
 async function handleFile(file) {
   try {
-    if (!file || file.type !== 'application/pdf') { toast('Please select a PDF file'); return; }
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    if (!file || !isPdf) { toast('Please select a PDF file'); return; }
     document.getElementById('pdf-input-global').value = '';
 
     const name = file.name.replace(/\.pdf$/i, '').replace(/[-_]/g, ' ');
@@ -651,10 +652,14 @@ async function startScanMode() {
     showView('view-home'); renderHome(); return;
   }
   try {
-    _scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    try {
+      _scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
+    } catch {
+      _scanStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    }
     const video = document.getElementById('scan-video');
     video.srcObject = _scanStream;
-    await video.play();
+    video.play().catch(() => {});
     const canvas = document.getElementById('scan-canvas');
     const ctx = canvas.getContext('2d');
     function tick() {
