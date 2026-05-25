@@ -652,15 +652,25 @@ html, body {
 
 .reader-section {
   cursor: pointer;
-  transition: filter 0.1s;
+  transition: filter 0.1s, border-left-color 0.1s, background 0.1s;
   border-left: 5px solid transparent;
 }
 
-.reader-section:active { filter: brightness(0.88); }
-.reader-section.active { filter: brightness(0.84); }
+.reader-section:active { filter: brightness(1.15); }
 
 .reader-section[data-role="ME"] { background: var(--me-bg); }
 .reader-section[data-role="THEM"] { background: var(--them-bg); }
+
+.reader-section.active[data-role="ME"] {
+  border-left-color: var(--me-color);
+  background: color-mix(in srgb, var(--me-bg) 60%, var(--me-color) 40%);
+  filter: none;
+}
+.reader-section.active[data-role="THEM"] {
+  border-left-color: var(--them-color);
+  background: color-mix(in srgb, var(--them-bg) 60%, var(--them-color) 40%);
+  filter: none;
+}
 
 .reader-section-label {
   padding: 12px 14px 0;

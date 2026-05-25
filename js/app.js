@@ -624,6 +624,7 @@ function startReaderMode(script, conn) {
     el.addEventListener('click', () => {
       container.querySelectorAll('.reader-section').forEach(e => e.classList.remove('active'));
       el.classList.add('active');
+      if (navigator.vibrate) navigator.vibrate(40);
       if (!conn) return;
       const role = el.dataset.role;
       const text = el.querySelector('.reader-section-text').textContent;
