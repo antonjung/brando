@@ -500,6 +500,39 @@ async function extractLines(pdfData) {
 }
 
 // ── Line Editor ───────────────────────────────────────────────────────────────
+function addLongPress(el, onLongPress) {
+  var timer = null;
+  el.addEventListener('touchstart', function(e) {
+    if (e.target.closest('.line-btn')) return;
+    timer = setTimeout(function() { timer = null; onLongPress(); }, 500);
+  });
+  el.addEventListener('touchend', function() { if (timer) { clearTimeout(timer); timer = null; } });
+  el.addEventListener('touchmove', function() { if (timer) { clearTimeout(timer); timer = null; } });
+  el.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+}
+
+function openLineEditModal(script, lineIndex, scriptId) {
+  var line = script.lines[lineIndex];
+  if (!line) return;
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = '<div class="modal"><h3>Edit Line</h3><textarea id="line-edit-ta"></textarea><div class="modal-actions"><button class="modal-cancel">Cancel</button><button class="btn-primary modal-save">Save</button></div></div>';
+  document.body.appendChild(overlay);
+  var ta = overlay.querySelector('#line-edit-ta');
+  ta.value = line.text;
+  ta.focus();
+  overlay.querySelector('.modal-cancel').addEventListener('click', function() { overlay.remove(); });
+  overlay.querySelector('.modal-save').addEventListener('click', function() {
+    var text = ta.value.trim();
+    if (!text) return;
+    line.text = text;
+    saveScripts();
+    overlay.remove();
+    renderLineList(scriptId);
+  });
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+}
+
 async function renderEditor(scriptId) {
   const script = state.scripts.find(s => s.id === scriptId);
   if (!script) return;
@@ -558,6 +591,10 @@ function renderLineList(scriptId) {
       saveScripts();
       renderLineList(scriptId);
     });
+  });
+
+  lineList.querySelectorAll('.line-row').forEach(row => {
+    addLongPress(row, function() { openLineEditModal(script, +row.dataset.index, scriptId); });
   });
 }
 
