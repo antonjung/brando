@@ -217,6 +217,20 @@ html, body {
 .empty-state p { color: var(--text-muted); font-size: 16px; }
 .empty-state .btn-primary { max-width: 220px; }
 
+.empty-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 220px;
+}
+
+.empty-actions .btn-primary,
+.empty-actions .btn-secondary {
+  width: 100%;
+  justify-content: center;
+}
+
 .script-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -381,6 +395,30 @@ html, body {
   background: var(--surface2);
   color: var(--text);
   font-size: 16px;
+  font-weight: 600;
+}
+
+.se-label-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.se-label-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.se-label-field input {
+  padding: 8px 10px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -1279,6 +1317,43 @@ html, body {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
 }
+
+.script-card-labels {
+  display: none;
+  gap: 10px;
+  padding: 10px 16px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.script-card.selected .script-card-labels { display: flex; }
+
+.script-label-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.script-label-input {
+  padding: 7px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s;
+  user-select: text;
+  width: 100%;
+}
+
+.script-label-input:focus { border-color: var(--accent); }
 
 /* ── Update Banner ────────────────────────── */
 .update-banner {

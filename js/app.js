@@ -251,6 +251,8 @@ function openScriptEditor(scriptId) {
   document.getElementById('se-text').value = script && script.lines
     ? script.lines.map(l => l.text).join('\n')
     : '';
+  document.getElementById('se-me-label').value = (script && script.meLabel) || state.settings.meLabel;
+  document.getElementById('se-them-label').value = (script && script.themLabel) || state.settings.themLabel;
 }
 
 function saveScriptEditor() {
@@ -259,12 +261,14 @@ function saveScriptEditor() {
   const raw = document.getElementById('se-text').value;
   const lines = raw.split('\n').map(l => l.trim()).filter(Boolean).map(text => ({ text, role: null }));
   if (!lines.length) { toast('Please enter some text'); return; }
+  const meLabel = document.getElementById('se-me-label').value.trim() || null;
+  const themLabel = document.getElementById('se-them-label').value.trim() || null;
   if (_seScriptId) {
     const script = state.scripts.find(s => s.id === _seScriptId);
-    Object.assign(script, { name, lines, sections: null, complete: false });
+    Object.assign(script, { name, lines, sections: null, complete: false, meLabel, themLabel });
   } else {
     const id = uid();
-    state.scripts.unshift({ id, name, lines, sections: null, manual: true, complete: false, createdAt: Date.now() });
+    state.scripts.unshift({ id, name, lines, sections: null, manual: true, complete: false, createdAt: Date.now(), meLabel, themLabel });
     state.currentScriptId = id;
   }
   saveScripts();
@@ -294,6 +298,7 @@ function renderHome() {
   list.querySelectorAll('.script-card').forEach(card => {
     card.addEventListener('click', e => {
       if (e.target.closest('[data-action="delete"]')) return;
+      if (e.target.closest('.script-label-input')) return;
       selectScript(card.dataset.id);
     });
   });
@@ -302,6 +307,19 @@ function renderHome() {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       handleScriptDelete(btn.closest('.script-card').dataset.id);
+    });
+  });
+
+  list.querySelectorAll('.script-label-input').forEach(input => {
+    input.addEventListener('click', e => e.stopPropagation());
+    input.addEventListener('change', e => {
+      const scriptId = input.closest('.script-card').dataset.id;
+      const script = state.scripts.find(s => s.id === scriptId);
+      if (script) {
+        script[e.target.dataset.key] = e.target.value.trim() || null;
+        saveScripts();
+        updateFooter();
+      }
     });
   });
 
@@ -330,15 +348,20 @@ function updateFooter() {
 
   const meLabel   = document.getElementById('footer-me-label');
   const themLabel = document.getElementById('footer-them-label');
-  if (meLabel)   meLabel.textContent = state.settings.meLabel;
-  if (themLabel) themLabel.textContent = state.settings.themLabel;
+  if (meLabel)   meLabel.textContent = scriptMeLabel(script);
+  if (themLabel) themLabel.textContent = scriptThemLabel(script);
 }
+
+function scriptMeLabel(script)   { return (script && script.meLabel)   || state.settings.meLabel; }
+function scriptThemLabel(script) { return (script && script.themLabel) || state.settings.themLabel; }
 
 function scriptCard(s) {
   const lineCount = s.lines ? s.lines.length : 0;
   const statusLabel = s.complete ? 'Ready' : 'Draft';
   const statusClass = s.complete ? 'complete' : 'draft';
   const selected = state.currentScriptId === s.id;
+  const meVal   = esc(s.meLabel   || state.settings.meLabel);
+  const themVal = esc(s.themLabel || state.settings.themLabel);
 
   return `
     <div class="script-card${selected ? ' selected' : ''}" data-id="${s.id}">
@@ -349,6 +372,10 @@ function scriptCard(s) {
         </div>
         <span class="script-status ${statusClass}">${statusLabel}</span>
         <button class="script-trash-btn" data-action="delete" title="Delete">${icon('trash-2', 16)}</button>
+      </div>
+      <div class="script-card-labels">
+        <label class="script-label-field">Actor <input class="script-label-input" data-key="meLabel" value="${meVal}" maxlength="10" autocomplete="off"></label>
+        <label class="script-label-field">Reader <input class="script-label-input" data-key="themLabel" value="${themVal}" maxlength="10" autocomplete="off"></label>
       </div>
     </div>`;
 }
@@ -504,7 +531,8 @@ function renderLineList(scriptId) {
   const script = state.scripts.find(s => s.id === scriptId);
   const lineList = document.getElementById('line-list');
   if (!script || !script.lines) return;
-  const { meLabel, themLabel } = state.settings;
+  const meLabel = scriptMeLabel(script);
+  const themLabel = scriptThemLabel(script);
 
   lineList.innerHTML = script.lines
     .map((line, i) => ({ line, i }))
@@ -565,8 +593,8 @@ function startAuditionFlow(scriptId) {
       conn.send({
         type: 'script',
         data: script,
-        meLabel: state.settings.meLabel,
-        themLabel: state.settings.themLabel,
+        meLabel: scriptMeLabel(script),
+        themLabel: scriptThemLabel(script),
       });
       enterAuditionMode();
     });
@@ -644,7 +672,8 @@ function stopScrolling() {
 // ── Reader Mode ───────────────────────────────────────────────────────────────
 function startReaderMode(script, conn) {
   state.readerConn = conn;
-  const { meLabel, themLabel } = state.settings;
+  const meLabel = scriptMeLabel(script);
+  const themLabel = scriptThemLabel(script);
 
   showView('view-reader');
   document.getElementById('main-title').textContent = script.name;
@@ -919,6 +948,7 @@ function bindEvents() {
     document.getElementById('how-it-works-modal').classList.add('hidden');
   });
   document.getElementById('btn-import-empty').addEventListener('click', triggerImport);
+  document.getElementById('btn-create-empty')?.addEventListener('click', () => openScriptEditor(null));
   document.getElementById('pdf-input-global').addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
 
   document.getElementById('btn-import-quit').addEventListener('click', () => { showView('view-home'); renderHome(); });
