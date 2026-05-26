@@ -201,7 +201,7 @@
     <li class="menu-divider"></li>
     <li><button id="menu-disconnect">Disconnect Reader</button></li>
     <li class="menu-divider"></li>
-    <li><button id="menu-install" class="hidden">Add to Home Screen</button></li>
+    <li><button id="menu-install">Add to Home Screen</button></li>
     <li><button id="menu-check-update">Check for Update</button></li>
     <li><button id="menu-reload">Reload App</button></li>
   </ul>
@@ -241,7 +241,7 @@
   </div>
 </div>
 
-<!-- ── Install Modal (iOS instructions) ────── -->
+<!-- ── Install Modal ────────────────────────── -->
 <div id="install-modal" class="install-overlay hidden">
   <div class="install-sheet">
     <div class="install-header">
@@ -249,11 +249,17 @@
       <button class="icon-btn" id="btn-install-close"><i data-feather="x"></i></button>
     </div>
     <div class="install-body">
-      <p>To install Brando on your iPhone or iPad:</p>
+      <p><strong>iPhone / iPad (Safari):</strong></p>
       <ol>
-        <li>Tap the <strong>Share</strong> button <span class="install-share-icon">&#x2B06;</span> at the bottom of Safari</li>
+        <li>Tap the <strong>Share</strong> button at the bottom of Safari</li>
         <li>Scroll down and tap <strong>Add to Home Screen</strong></li>
-        <li>Tap <strong>Add</strong> to confirm</li>
+        <li>Tap <strong>Add</strong></li>
+      </ol>
+      <p style="margin-top:16px"><strong>Android (Chrome):</strong></p>
+      <ol>
+        <li>Tap the <strong>⋮</strong> menu in Chrome</li>
+        <li>Tap <strong>Add to Home screen</strong></li>
+        <li>Tap <strong>Add</strong></li>
       </ol>
     </div>
   </div>
@@ -271,8 +277,8 @@
       <section class="hiw-section">
         <h3><i data-feather="file-plus"></i> Adding scripts</h3>
         <ul>
-          <li><strong>Import PDF</strong> — tap Import PDF from the menu or home screen. The script appears in your list ready to edit.</li>
-          <li><strong>Create manually</strong> — tap Create Script, enter a name, then paste or type lines (one line per paragraph). Tap <em>Next — assign roles</em> to continue.</li>
+          <li><strong>Import PDF</strong> — tap Import PDF from the menu or home screen.</li>
+          <li><strong>Create manually</strong> — tap Create Script, enter a name, paste or type lines (one per paragraph), then tap <em>Next — assign roles</em>.</li>
         </ul>
       </section>
 
@@ -280,26 +286,25 @@
         <h3><i data-feather="edit-2"></i> Editing a script</h3>
         <ul>
           <li>Select a script on the home screen, then tap <strong>Edit</strong> in the footer.</li>
-          <li>Each line shows two buttons — <strong>A</strong> (Actor) and <strong>B</strong> (Reader). Tap to assign; tap again to unassign.</li>
-          <li>Tap anywhere on a line (not the buttons) to edit the text.</li>
+          <li>Each line shows two buttons — <strong>A</strong> (Actor) and <strong>B</strong> (Script). Tap to assign; tap again to unassign.</li>
+          <li>Tap directly on the line text to edit it inline.</li>
           <li>Tap <strong>Done</strong> when finished — the script is marked <em>Ready</em>.</li>
         </ul>
       </section>
 
       <section class="hiw-section">
-        <h3><i data-feather="tag"></i> Custom labels</h3>
+        <h3><i data-feather="tag"></i> Custom role names</h3>
         <ul>
-          <li>Select a script on the home screen to reveal its own <strong>Actor</strong> and <strong>Reader</strong> label fields.</li>
-          <li>Editing these overrides the global defaults for that script only.</li>
-          <li>Global defaults live in <strong>Settings</strong> (gear icon, top right).</li>
+          <li>Select a script on the home screen to reveal its <strong>Actor</strong> and <strong>Script</strong> label fields.</li>
+          <li>Edit them to use character names for that script — e.g. "Jane" and "Cue".</li>
         </ul>
       </section>
 
       <section class="hiw-section">
         <h3><i data-feather="smartphone"></i> Two devices, two roles</h3>
         <table class="hiw-table">
-          <tr><th>Device A</th><td>The actor — tap the <strong>Actor</strong> footer button</td></tr>
-          <tr><th>Device B</th><td>The reader — tap the <strong>Read</strong> footer button</td></tr>
+          <tr><th>Device A</th><td>The actor — tap <strong>Actor</strong> in the footer</td></tr>
+          <tr><th>Device B</th><td>The script reader — tap <strong>Script</strong> in the footer</td></tr>
         </table>
       </section>
 
@@ -307,38 +312,42 @@
         <h3><i data-feather="link"></i> Connecting</h3>
         <ol>
           <li>On Device A, select a <em>Ready</em> script and tap <strong>Actor</strong>.</li>
-          <li>A QR code appears. On Device B tap <strong>Read</strong> then scan it.</li>
+          <li>A QR code appears — on Device B tap <strong>Scan</strong> and point the camera at it.</li>
           <li>Device B connects and receives the script automatically.</li>
-          <li>Device A enters audition mode; Device B sees all sections listed.</li>
+          <li>Device A enters audition mode; Device B shows all sections.</li>
         </ol>
       </section>
 
       <section class="hiw-section">
         <h3><i data-feather="play"></i> Running the audition</h3>
         <ul>
-          <li>On Device B, tap a <strong>Reader</strong> section → Device A's screen clears.</li>
+          <li>On Device B, tap a <strong>Script</strong> section → Device A's screen clears.</li>
           <li>Tap an <strong>Actor</strong> section → Device A shows those lines and they auto-scroll.</li>
           <li>Adjust scroll speed and text sizes in <strong>Settings</strong>.</li>
         </ul>
       </section>
 
       <section class="hiw-section">
-        <h3><i data-feather="user"></i> Solo / testing</h3>
-        <p>Tap <strong>Reader</strong> in the footer on any device to browse sections locally — no second device needed.</p>
+        <h3><i data-feather="play-circle"></i> Scan / Run button</h3>
+        <ul>
+          <li>The footer button shows <strong>Scan</strong> (camera icon) when not connected.</li>
+          <li>Once connected it becomes <strong>Run</strong> (play icon) — tap it to jump straight back to the script without scanning again.</li>
+          <li>To disconnect, open the menu and tap <strong>Disconnect Reader</strong>.</li>
+        </ul>
       </section>
 
       <section class="hiw-section">
-        <h3><i data-feather="book-open"></i> Read button &amp; staying connected</h3>
+        <h3><i data-feather="eye-off"></i> Solo practice</h3>
         <ul>
-          <li>Once connected, tapping <strong>Read</strong> on Device B returns straight to the script — no need to scan again.</li>
-          <li>The wifi icon in the header shows connection status (green = connected).</li>
-          <li>To drop the connection open the menu and tap <strong>Disconnect Reader</strong>.</li>
+          <li>Tap <strong>Script</strong> in the footer on any device to browse sections without a second device.</li>
+          <li>Use the <strong>toggle</strong> in the top-right of the script screen to blur the Actor lines — tap a blurred line to peek at it.</li>
+          <li>The toggle and blur are local only — nothing is sent to a connected device.</li>
         </ul>
       </section>
 
       <section class="hiw-section">
         <h3><i data-feather="file-text"></i> Notes</h3>
-        <p>Open <strong>Notes</strong> from the menu to keep rehearsal notes. Tap <strong>+</strong> to add one; use the edit and delete icons on each note.</p>
+        <p>Open <strong>Notes</strong> from the menu to keep rehearsal notes. Tap <strong>+</strong> to add; use the edit and delete icons on each note.</p>
       </section>
 
       <section class="hiw-section">
@@ -346,10 +355,14 @@
         <table class="hiw-table">
           <tr><th>Scroll Speed</th><td>How fast Actor lines auto-scroll</td></tr>
           <tr><th>Actor Text Size</th><td>Font size on the Actor's screen</td></tr>
-          <tr><th>Reader Text Size</th><td>Font size on the Reader's screen</td></tr>
+          <tr><th>Script Text Size</th><td>Font size on the Script reader's screen</td></tr>
           <tr><th>Theme</th><td>Dark, Light, or Dyslexia-friendly</td></tr>
-          <tr><th>Actor / Reader Label</th><td>Rename the roles globally</td></tr>
         </table>
+      </section>
+
+      <section class="hiw-section">
+        <h3><i data-feather="download"></i> Install</h3>
+        <p>Open the menu and tap <strong>Add to Home Screen</strong> to install Brando as an app — works offline once installed.</p>
       </section>
 
     </div>

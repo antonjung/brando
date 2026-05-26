@@ -1146,7 +1146,7 @@ function bindEvents() {
       _installPrompt.userChoice.then(function(result) {
         if (result.outcome === 'accepted') _installPrompt = null;
       });
-    } else if (isIOS()) {
+    } else {
       showInstallModal();
     }
   });
@@ -1192,10 +1192,10 @@ function init() {
   if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2 });
   updateScanBtn();
 
-  // On iOS, always show the install button (no beforeinstallprompt API)
-  if (isIOS() && !navigator.standalone) {
+  // Hide install button if already running as installed PWA
+  if (navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
     var installBtn = document.getElementById('menu-install');
-    if (installBtn) installBtn.classList.remove('hidden');
+    if (installBtn) installBtn.classList.add('hidden');
   }
 
   const vText = `v${APP_VERSION}`;
