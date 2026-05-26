@@ -500,16 +500,6 @@ async function extractLines(pdfData) {
 }
 
 // ── Line Editor ───────────────────────────────────────────────────────────────
-function addLongPress(el, onLongPress) {
-  var timer = null;
-  el.addEventListener('touchstart', function(e) {
-    if (e.target.closest('.line-btn')) return;
-    timer = setTimeout(function() { timer = null; onLongPress(); }, 500);
-  });
-  el.addEventListener('touchend', function() { if (timer) { clearTimeout(timer); timer = null; } });
-  el.addEventListener('touchmove', function() { if (timer) { clearTimeout(timer); timer = null; } });
-  el.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-}
 
 function openLineEditModal(script, lineIndex, scriptId) {
   var line = script.lines[lineIndex];
@@ -594,7 +584,10 @@ function renderLineList(scriptId) {
   });
 
   lineList.querySelectorAll('.line-row').forEach(row => {
-    addLongPress(row, function() { openLineEditModal(script, +row.dataset.index, scriptId); });
+    row.addEventListener('click', function(e) {
+      if (e.target.closest('.line-btn')) return;
+      openLineEditModal(script, +row.dataset.index, scriptId);
+    });
   });
 }
 
