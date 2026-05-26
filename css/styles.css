@@ -1422,11 +1422,11 @@ html, body {
 
 /* ── Garamond title ───────────────────────── */
 .app-header h1 {
-  font-family: 'EB Garamond', Georgia, serif;
+  font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 22px;
-  font-weight: 700;
-  color: var(--accent);
-  letter-spacing: 0.06em;
+  font-weight: 600;
+  color: #f59e0b;
+  letter-spacing: 0.01em;
 }
 
 /* ── Reader section highlight colours ────── */
