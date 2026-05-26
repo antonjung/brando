@@ -25,6 +25,7 @@ const state = {
   peerId: null,
   conn: null,
   readerConn: null,
+  readerScript: null,
   scrollRaf: null,
   swReg: null,
 };
@@ -710,8 +711,8 @@ function startReaderMode(script, conn) {
   document.getElementById('main-title').textContent = script.name;
   const statusEl = document.getElementById('reader-status');
   statusEl.classList.remove('connected', 'disconnected');
-  if (conn) statusEl.classList.add('connected');
-  statusEl.textContent = conn ? '●' : '○';
+  if (conn) { statusEl.classList.add('connected'); statusEl.innerHTML = icon('wifi', 18); }
+  else { statusEl.innerHTML = icon('wifi-off', 18); }
 
   // Group consecutive same-role lines; skip unassigned/CUT without breaking grouping
   let lines;
@@ -836,12 +837,13 @@ function handleIncomingPeer(peerId) {
       const rs = document.getElementById('reader-status');
       rs.classList.remove('disconnected');
       rs.classList.add('connected');
-      rs.textContent = '●';
+      rs.innerHTML = icon('wifi', 18);
     });
     conn.on('data', msg => {
       if (msg.type === 'script') {
         if (msg.meLabel) state.settings.meLabel = msg.meLabel;
         if (msg.themLabel) state.settings.themLabel = msg.themLabel;
+        state.readerScript = msg.data;
         startReaderMode(msg.data, conn);
       }
     });
@@ -850,7 +852,8 @@ function handleIncomingPeer(peerId) {
       const rs = document.getElementById('reader-status');
       rs.classList.remove('connected');
       rs.classList.add('disconnected');
-      rs.textContent = '●';
+      rs.innerHTML = icon('wifi-off', 18);
+      state.readerConn = null;
     });
     conn.on('error', err => toast('Connection error: ' + err));
   });
@@ -992,8 +995,12 @@ function bindEvents() {
   // Footer nav
   document.getElementById('btn-footer-home').addEventListener('click', () => {
     stopScrolling();
-    if (state.peer) { try { state.peer.destroy(); } catch {} state.peer = null; }
-    if (state.readerConn) { try { state.readerConn.close(); } catch {} state.readerConn = null; }
+    if (state.conn) { try { state.conn.close(); } catch {} state.conn = null; }
+    // Only destroy peer if not maintaining a live reader connection
+    if (!state.readerConn || !state.readerConn.open) {
+      if (state.peer) { try { state.peer.destroy(); } catch {} state.peer = null; }
+      state.readerConn = null;
+    }
     showView('view-home'); renderHome();
   });
   document.getElementById('btn-footer-edit').addEventListener('click', async () => {
@@ -1013,7 +1020,25 @@ function bindEvents() {
     const script = state.scripts.find(s => s.id === state.currentScriptId);
     if (script) startReaderMode(script, null);
   });
-  document.getElementById('btn-footer-scan').addEventListener('click', startScanMode);
+  document.getElementById('btn-footer-scan').addEventListener('click', function() {
+    if (state.readerConn && state.readerConn.open) {
+      if (state.readerScript) startReaderMode(state.readerScript, state.readerConn);
+      else showView('view-reader');
+    } else {
+      startScanMode();
+    }
+  });
+  document.getElementById('menu-disconnect').addEventListener('click', function() {
+    closeAllPanels();
+    if (state.readerConn) { try { state.readerConn.close(); } catch {} state.readerConn = null; }
+    if (state.peer) { try { state.peer.destroy(); } catch {} state.peer = null; }
+    state.readerScript = null;
+    const rs = document.getElementById('reader-status');
+    rs.classList.add('hidden');
+    rs.classList.remove('connected', 'disconnected');
+    toast('Reader disconnected');
+    showView('view-home'); renderHome();
+  });
   document.getElementById('scan-manual-connect').addEventListener('click', () => {
     const raw = document.getElementById('scan-manual-input').value.trim();
     if (!raw) return;

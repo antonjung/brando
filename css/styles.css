@@ -751,10 +751,13 @@ html, body {
 }
 
 .reader-status {
-  font-size: 18px;
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
   transition: color 0.3s;
 }
 
+.reader-status svg { width: 18px; height: 18px; display: block; }
 .reader-status.connected { color: #7fff7f; }
 .reader-status.disconnected { color: var(--danger); }
 
