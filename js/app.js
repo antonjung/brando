@@ -347,10 +347,6 @@ function updateFooter() {
   if (meBtn)   meBtn.disabled   = !isComplete;
   if (themBtn) themBtn.disabled = !isComplete;
 
-  const meLabel   = document.getElementById('footer-me-label');
-  const themLabel = document.getElementById('footer-them-label');
-  if (meLabel)   meLabel.textContent = scriptMeLabel(script);
-  if (themLabel) themLabel.textContent = scriptThemLabel(script);
 }
 
 function scriptMeLabel(script)   { return (script && script.meLabel)   || state.settings.meLabel; }
