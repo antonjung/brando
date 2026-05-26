@@ -455,6 +455,9 @@ html, body {
   gap: 10px;
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
+}
+
+.line-row > :not(.line-text-input) {
   -webkit-touch-callout: none;
   user-select: none;
 }

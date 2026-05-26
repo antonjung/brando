@@ -551,9 +551,9 @@ function renderLineList(scriptId) {
   lineList.querySelectorAll('.line-text-input').forEach(ta => {
     autoResizeTextarea(ta);
     ta.addEventListener('input', function() { autoResizeTextarea(ta); });
-    ta.addEventListener('change', function() {
+    ta.addEventListener('blur', function() {
       var text = ta.value.trim();
-      if (!text) { ta.value = script.lines[+ta.dataset.index].text; return; }
+      if (!text) { ta.value = script.lines[+ta.dataset.index].text; autoResizeTextarea(ta); return; }
       script.lines[+ta.dataset.index].text = text;
       saveScripts();
     });
