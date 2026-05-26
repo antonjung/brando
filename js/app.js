@@ -709,7 +709,8 @@ function startReaderMode(script, conn) {
   showView('view-reader');
   document.getElementById('main-title').textContent = script.name;
   const statusEl = document.getElementById('reader-status');
-  statusEl.className = conn ? 'reader-status connected' : 'reader-status';
+  statusEl.classList.remove('connected', 'disconnected');
+  if (conn) statusEl.classList.add('connected');
   statusEl.textContent = conn ? '●' : '○';
 
   // Group consecutive same-role lines; skip unassigned/CUT without breaking grouping
@@ -832,8 +833,10 @@ function handleIncomingPeer(peerId) {
     const conn = state.readerConn = state.peer.connect(peerId, { reliable: true });
     conn.on('open', () => {
       toast('Connected!');
-      document.getElementById('reader-status').className = 'reader-status connected';
-      document.getElementById('reader-status').textContent = '●';
+      const rs = document.getElementById('reader-status');
+      rs.classList.remove('disconnected');
+      rs.classList.add('connected');
+      rs.textContent = '●';
     });
     conn.on('data', msg => {
       if (msg.type === 'script') {
@@ -844,8 +847,10 @@ function handleIncomingPeer(peerId) {
     });
     conn.on('close', () => {
       toast('Disconnected');
-      document.getElementById('reader-status').className = 'reader-status disconnected';
-      document.getElementById('reader-status').textContent = '●';
+      const rs = document.getElementById('reader-status');
+      rs.classList.remove('connected');
+      rs.classList.add('disconnected');
+      rs.textContent = '●';
     });
     conn.on('error', err => toast('Connection error: ' + err));
   });
