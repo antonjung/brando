@@ -1,9 +1,6 @@
-﻿const VERSION = '1.0.47';
+const VERSION = '1.0.48';
 const CACHE = `brando-v${VERSION}`;
 const ASSETS = [
-  '.',
-  'index.html',
-  'version.js',
   'css/styles.css',
   'js/app.js',
   'manifest.json',
@@ -11,9 +8,12 @@ const ASSETS = [
   'icons/brando.png',
 ];
 
+// These are always fetched fresh from network (with cache fallback offline)
+const NETWORK_FIRST = ['/', '/index.html', 'index.html', 'version.js'];
+
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS))
+    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
   );
 });
 
@@ -27,8 +27,19 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+
+  const url = new URL(e.request.url);
+
+  // Always network-first for index.html and version.js
+  if (NETWORK_FIRST.some(p => url.pathname.endsWith(p) || url.pathname === '/brando/' || url.pathname === '/brando')) {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
   // Cache CDN resources
-  if (e.request.url.includes('cdnjs') || e.request.url.includes('unpkg') || e.request.url.includes('jsdelivr')) {
+  if (url.hostname.includes('cdnjs') || url.hostname.includes('unpkg') || url.hostname.includes('jsdelivr')) {
     e.respondWith(
       caches.open(CACHE).then(async c => {
         const cached = await c.match(e.request);
@@ -40,12 +51,13 @@ self.addEventListener('fetch', e => {
     );
     return;
   }
+
+  // Cache-first for everything else
   e.respondWith(
     caches.match(e.request).then(r => r || fetch(e.request))
   );
 });
 
-// Triggered by app to skip the waiting phase and activate immediately
 self.addEventListener('message', e => {
   if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
