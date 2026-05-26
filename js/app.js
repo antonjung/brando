@@ -936,7 +936,8 @@ async function startSelfVideo() {
     vid.srcObject = _selfStream;
     vid.play().catch(function() {});
     document.getElementById('audition-video-panel').classList.remove('hidden');
-    document.getElementById('btn-audition-video').classList.add('active');
+    var vBtn = document.getElementById('btn-audition-video');
+    if (vBtn) vBtn.classList.add('active');
   } catch (err) {
     toast('Camera access denied');
   }

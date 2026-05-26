@@ -651,49 +651,42 @@ html, body {
   position: relative;
 }
 
-.exit-btn {
+/* ── Audition controls bar ────────────────── */
+.audition-controls-bar {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 40px;
-  height: 40px;
-  background: rgba(255,255,255,0.18);
-  border: 1px solid rgba(255,255,255,0.25);
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  z-index: 500;
+  pointer-events: none;
+}
+
+.audition-ctrl {
+  width: 44px;
+  height: 44px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
   border-radius: 50%;
-  color: rgba(255,255,255,0.8);
-  font-size: 16px;
+  color: rgba(255,255,255,0.9);
   cursor: pointer;
-  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  pointer-events: all;
 }
 
-.exit-btn:active { background: rgba(255,255,255,0.25); }
+.audition-ctrl:active { background: rgba(255,255,255,0.3); }
+.audition-ctrl.active { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.6); color: #fff; }
+.audition-ctrl svg { width: 20px; height: 20px; display: block; }
 
-/* ── Audition video ───────────────────────── */
-.audition-video-toggle {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  width: 40px;
-  height: 40px;
-  background: rgba(255,255,255,0.18);
-  border: 1px solid rgba(255,255,255,0.25);
-  border-radius: 50%;
-  color: rgba(255,255,255,0.8);
-  cursor: pointer;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s, color 0.15s;
-}
-
-.audition-video-toggle:active { background: rgba(255,255,255,0.3); }
-.audition-video-toggle.active { color: #fff; background: rgba(255,255,255,0.28); border-color: rgba(255,255,255,0.5); }
-.audition-video-toggle svg { width: 18px; height: 18px; display: block; }
+/* keep old .exit-btn name working if referenced elsewhere */
+.exit-btn { display: none; }
 
 .audition-video-panel {
   position: absolute;
@@ -1393,8 +1386,6 @@ html, body {
 .footer-btn svg { width: 20px; height: 20px; }
 .footer-btn.footer-me:not(:disabled)   { color: var(--me-color); }
 .footer-btn.footer-them:not(:disabled) { color: var(--them-color); }
-.footer-btn.footer-me span,
-.footer-btn.footer-them span { font-size: 14px; font-weight: 800; letter-spacing: 0; }
 
 /* ── Script Card Selected State ──────────── */
 .script-card.selected {
