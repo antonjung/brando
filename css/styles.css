@@ -1384,6 +1384,7 @@ html, body {
 .footer-btn.active { color: var(--accent); }
 .footer-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .footer-btn svg { width: 20px; height: 20px; }
+.footer-btn span { font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
 .footer-btn.footer-me:not(:disabled)   { color: var(--me-color); }
 .footer-btn.footer-them:not(:disabled) { color: var(--them-color); }
 
