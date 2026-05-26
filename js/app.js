@@ -18,7 +18,7 @@ function icon(name, size = 16) {
 const state = {
   scripts: [],
   notes: [],
-  settings: { scrollRate: 40, meFontSize: 32, themFontSize: 16, theme: 'dark', meLabel: 'Actor', themLabel: 'Reader' },
+  settings: { scrollRate: 40, meFontSize: 32, themFontSize: 16, theme: 'dark' },
   importData: { name: '', arrayBuffer: null },
   currentScriptId: null,
   peer: null,
@@ -180,15 +180,13 @@ function applyFontSizes() {
 }
 
 function renderSettings() {
-  const { scrollRate, meFontSize, themFontSize, meLabel, themLabel } = state.settings;
+  const { scrollRate, meFontSize, themFontSize } = state.settings;
   document.getElementById('setting-scroll').value = scrollRate;
   document.getElementById('setting-scroll-val').textContent = `${scrollRate} px/s`;
   document.getElementById('setting-me-font-size').value = meFontSize || 32;
   document.getElementById('setting-me-font-size-val').textContent = `${meFontSize || 32}px`;
   document.getElementById('setting-them-font-size').value = themFontSize || 16;
   document.getElementById('setting-them-font-size-val').textContent = `${themFontSize || 16}px`;
-  document.getElementById('setting-me').value = meLabel;
-  document.getElementById('setting-them').value = themLabel;
   applyTheme(state.settings.theme);
 }
 
@@ -218,16 +216,6 @@ function initSettingsListeners() {
       saveSettings();
     });
   });
-  document.getElementById('setting-me').addEventListener('change', e => {
-    state.settings.meLabel = e.target.value.trim() || 'Actor';
-    e.target.value = state.settings.meLabel;
-    saveSettings();
-  });
-  document.getElementById('setting-them').addEventListener('change', e => {
-    state.settings.themLabel = e.target.value.trim() || 'Reader';
-    e.target.value = state.settings.themLabel;
-    saveSettings();
-  });
   document.querySelectorAll('.color-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const key = btn.dataset.for;
@@ -252,8 +240,6 @@ function openScriptEditor(scriptId) {
   document.getElementById('se-text').value = script && script.lines
     ? script.lines.map(l => l.text).join('\n')
     : '';
-  document.getElementById('se-me-label').value = (script && script.meLabel) || state.settings.meLabel;
-  document.getElementById('se-them-label').value = (script && script.themLabel) || state.settings.themLabel;
 }
 
 function saveScriptEditor() {
@@ -262,14 +248,12 @@ function saveScriptEditor() {
   const raw = document.getElementById('se-text').value;
   const lines = raw.split('\n').map(l => l.trim()).filter(Boolean).map(text => ({ text, role: null }));
   if (!lines.length) { toast('Please enter some text'); return; }
-  const meLabel = document.getElementById('se-me-label').value.trim() || null;
-  const themLabel = document.getElementById('se-them-label').value.trim() || null;
   if (_seScriptId) {
     const script = state.scripts.find(s => s.id === _seScriptId);
-    Object.assign(script, { name, lines, sections: null, complete: false, meLabel, themLabel });
+    Object.assign(script, { name, lines, sections: null, complete: false });
   } else {
     const id = uid();
-    state.scripts.unshift({ id, name, lines, sections: null, manual: true, complete: false, createdAt: Date.now(), meLabel, themLabel });
+    state.scripts.unshift({ id, name, lines, sections: null, manual: true, complete: false, createdAt: Date.now() });
     state.currentScriptId = id;
   }
   saveScripts();
@@ -299,7 +283,6 @@ function renderHome() {
   list.querySelectorAll('.script-card').forEach(card => {
     card.addEventListener('click', e => {
       if (e.target.closest('[data-action="delete"]')) return;
-      if (e.target.closest('.script-label-input')) return;
       selectScript(card.dataset.id);
     });
   });
@@ -308,19 +291,6 @@ function renderHome() {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       handleScriptDelete(btn.closest('.script-card').dataset.id);
-    });
-  });
-
-  list.querySelectorAll('.script-label-input').forEach(input => {
-    input.addEventListener('click', e => e.stopPropagation());
-    input.addEventListener('change', e => {
-      const scriptId = input.closest('.script-card').dataset.id;
-      const script = state.scripts.find(s => s.id === scriptId);
-      if (script) {
-        script[e.target.dataset.key] = e.target.value.trim() || null;
-        saveScripts();
-        updateFooter();
-      }
     });
   });
 
@@ -349,16 +319,12 @@ function updateFooter() {
 
 }
 
-function scriptMeLabel(script)   { return (script && script.meLabel)   || state.settings.meLabel; }
-function scriptThemLabel(script) { return (script && script.themLabel) || state.settings.themLabel; }
 
 function scriptCard(s) {
   const lineCount = s.lines ? s.lines.length : 0;
   const statusLabel = s.complete ? 'Ready' : 'Draft';
   const statusClass = s.complete ? 'complete' : 'draft';
   const selected = state.currentScriptId === s.id;
-  const meVal   = esc(s.meLabel   || state.settings.meLabel);
-  const themVal = esc(s.themLabel || state.settings.themLabel);
 
   return `
     <div class="script-card${selected ? ' selected' : ''}" data-id="${s.id}">
@@ -369,10 +335,6 @@ function scriptCard(s) {
         </div>
         <span class="script-status ${statusClass}">${statusLabel}</span>
         <button class="script-trash-btn" data-action="delete" title="Delete">${icon('trash-2', 16)}</button>
-      </div>
-      <div class="script-card-labels">
-        <label class="script-label-field">Actor <input class="script-label-input" data-key="meLabel" value="${meVal}" maxlength="10" autocomplete="off"></label>
-        <label class="script-label-field">Reader <input class="script-label-input" data-key="themLabel" value="${themVal}" maxlength="10" autocomplete="off"></label>
       </div>
     </div>`;
 }
@@ -551,15 +513,13 @@ function renderLineList(scriptId) {
   const script = state.scripts.find(s => s.id === scriptId);
   const lineList = document.getElementById('line-list');
   if (!script || !script.lines) return;
-  const meLabel = scriptMeLabel(script);
-  const themLabel = scriptThemLabel(script);
 
   lineList.innerHTML = script.lines
     .map((line, i) => ({ line, i }))
     .filter(({ line }) => line.role !== 'CUT')
     .map(({ line, i }) => {
       const rc    = line.role === 'ME' ? 'me' : line.role === 'THEM' ? 'them' : '';
-      const label = line.role === 'ME' ? meLabel : line.role === 'THEM' ? themLabel : '';
+      const label = line.role === 'ME' ? 'Actor' : line.role === 'THEM' ? 'Reader' : '';
       const activeA = line.role === 'ME'   ? ' active' : '';
       const activeB = line.role === 'THEM' ? ' active' : '';
       return `
@@ -618,12 +578,7 @@ function startAuditionFlow(scriptId) {
   state.peer.on('connection', conn => {
     state.conn = conn;
     conn.on('open', () => {
-      conn.send({
-        type: 'script',
-        data: script,
-        meLabel: scriptMeLabel(script),
-        themLabel: scriptThemLabel(script),
-      });
+      conn.send({ type: 'script', data: script });
       enterAuditionMode();
     });
     conn.on('data', msg => handleAuditionCommand(msg));
@@ -701,8 +656,6 @@ function stopScrolling() {
 // ── Reader Mode ───────────────────────────────────────────────────────────────
 function startReaderMode(script, conn) {
   state.readerConn = conn;
-  const meLabel = scriptMeLabel(script);
-  const themLabel = scriptThemLabel(script);
 
   showView('view-reader');
   document.getElementById('main-title').textContent = script.name;
@@ -731,7 +684,7 @@ function startReaderMode(script, conn) {
 
   const container = document.getElementById('reader-sections');
   container.innerHTML = lines.map((line, i) => {
-    const label = line.role === 'ME' ? meLabel : themLabel;
+    const label = line.role === 'ME' ? 'Actor' : 'Reader';
     return `<div class="reader-section" data-role="${line.role}" data-index="${i}">
               <div class="reader-section-label">${esc(label)}</div>
               <div class="reader-section-text">${esc(line.text || '')}</div>
@@ -850,8 +803,6 @@ function handleIncomingPeer(peerId) {
     });
     conn.on('data', msg => {
       if (msg.type === 'script') {
-        if (msg.meLabel) state.settings.meLabel = msg.meLabel;
-        if (msg.themLabel) state.settings.themLabel = msg.themLabel;
         state.readerScript = msg.data;
         startReaderMode(msg.data, conn);
       }
