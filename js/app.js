@@ -683,11 +683,13 @@ function startReaderMode(script, conn) {
   const meLabel   = scriptMeLabel(script);
   const themLabel = scriptThemLabel(script);
 
-  // Reset hide-actor toggle
+  // Reset hide-actor toggle; hide it when connected to a live actor
   const sections = document.getElementById('reader-sections');
   const hideChk = document.getElementById('toggle-hide-actor');
+  const hideToggle = document.querySelector('.actor-toggle');
   if (sections) sections.classList.remove('hide-actor');
   if (hideChk) hideChk.checked = false;
+  if (hideToggle) hideToggle.classList.toggle('hidden', !!conn);
 
   showView('view-reader');
   document.getElementById('main-title').textContent = script.name;
@@ -751,21 +753,11 @@ function startReaderMode(script, conn) {
   });
 }
 
-function setFeatherIcon(parent, iconName) {
-  var el = parent.querySelector('svg') || parent.querySelector('i');
-  if (!el) return;
-  var i = document.createElement('i');
-  i.setAttribute('data-feather', iconName);
-  el.parentNode.replaceChild(i, el);
-}
-
 function updateScanBtn() {
   var connected = state.readerConn && state.readerConn.open;
   var footerBtn = document.getElementById('btn-footer-scan');
   if (footerBtn) {
-    setFeatherIcon(footerBtn, connected ? 'play-circle' : 'camera');
-    var span = footerBtn.querySelector('span');
-    if (span) span.textContent = connected ? 'Run' : 'Scan';
+    footerBtn.innerHTML = '<i data-feather="' + (connected ? 'play-circle' : 'camera') + '"></i><span>' + (connected ? 'Run' : 'Scan') + '</span>';
   }
   if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2 });
 }
