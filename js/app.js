@@ -244,11 +244,17 @@ function initSettingsListeners() {
 let _seScriptId = null;
 
 function openScriptEditor(scriptId) {
-  _seScriptId = scriptId || null;
-  showView('view-script-editor');
-  const script = scriptId ? state.scripts.find(s => s.id === scriptId) : null;
-  document.getElementById('se-name').value = script ? script.name : '';
-  renderSeLines(script && script.lines ? script.lines : []);
+  try {
+    _seScriptId = scriptId || null;
+    showView('view-script-editor');
+    const script = scriptId ? state.scripts.find(s => s.id === scriptId) : null;
+    const nameEl = document.getElementById('se-name');
+    if (!nameEl) { toast('Editor not available — try reloading'); return; }
+    nameEl.value = script ? script.name : '';
+    renderSeLines(script && script.lines ? script.lines : []);
+  } catch (err) {
+    toast('Error: ' + err.message);
+  }
 }
 
 function renderSeLines(lines) {
@@ -968,9 +974,9 @@ function bindEvents() {
   document.getElementById('btn-settings-close').addEventListener('click', closeAllPanels);
 
   document.getElementById('menu-import').addEventListener('click', () => { closeAllPanels(); triggerImport(); });
-  document.getElementById('menu-create-script').addEventListener('click', () => { closeAllPanels(); openScriptEditor(null); });
-  document.getElementById('btn-se-add').addEventListener('click', addSeLine);
-  document.getElementById('btn-se-save').addEventListener('click', saveScriptEditor);
+  document.getElementById('menu-create-script')?.addEventListener('click', () => { closeAllPanels(); openScriptEditor(null); });
+  document.getElementById('btn-se-add')?.addEventListener('click', addSeLine);
+  document.getElementById('btn-se-save')?.addEventListener('click', saveScriptEditor);
   document.getElementById('menu-notes').addEventListener('click', () => { closeAllPanels(); renderNotes(); showView('view-notes'); });
   document.getElementById('menu-how-it-works').addEventListener('click', () => {
     closeAllPanels();
