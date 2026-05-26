@@ -451,13 +451,12 @@ html, body {
 
 .line-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
   -webkit-touch-callout: none;
   user-select: none;
-  cursor: pointer;
 }
 
 .line-btn {
@@ -483,10 +482,28 @@ html, body {
 .line-btn-a.active { opacity: 1; box-shadow: 0 0 0 2px var(--me-color); }
 .line-btn-b.active { opacity: 1; box-shadow: 0 0 0 2px var(--them-color); }
 
-.line-text {
+.line-text-input {
   flex: 1;
   font-size: 14px;
   line-height: 1.5;
+  background: none;
+  border: none;
+  color: var(--text);
+  resize: none;
+  outline: none;
+  padding: 0;
+  font-family: inherit;
+  overflow: hidden;
+  cursor: text;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.line-text-input:focus {
+  background: var(--surface2);
+  border-radius: 4px;
+  padding: 4px 6px;
+  margin: -4px -6px;
 }
 
 

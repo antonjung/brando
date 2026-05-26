@@ -374,6 +374,11 @@ async function handleScriptDelete(id) {
   toast('Script deleted');
 }
 
+function autoResizeTextarea(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = ta.scrollHeight + 'px';
+}
+
 function esc(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -482,27 +487,6 @@ async function extractLines(pdfData) {
 
 // ── Line Editor ───────────────────────────────────────────────────────────────
 
-function openLineEditModal(script, lineIndex, scriptId) {
-  var line = script.lines[lineIndex];
-  if (!line) return;
-  var overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.innerHTML = '<div class="modal"><h3>Edit Line</h3><textarea id="line-edit-ta"></textarea><div class="modal-actions"><button class="modal-cancel">Cancel</button><button class="btn-primary modal-save">Save</button></div></div>';
-  document.body.appendChild(overlay);
-  var ta = overlay.querySelector('#line-edit-ta');
-  ta.value = line.text;
-  ta.focus();
-  overlay.querySelector('.modal-cancel').addEventListener('click', function() { overlay.remove(); });
-  overlay.querySelector('.modal-save').addEventListener('click', function() {
-    var text = ta.value.trim();
-    if (!text) return;
-    line.text = text;
-    saveScripts();
-    overlay.remove();
-    renderLineList(scriptId);
-  });
-  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
-}
 
 async function renderEditor(scriptId) {
   const script = state.scripts.find(s => s.id === scriptId);
@@ -549,7 +533,7 @@ function renderLineList(scriptId) {
       return `
         <div class="line-row ${rc}" data-index="${i}">
           <span class="line-role-badge ${rc}">${esc(label)}</span>
-          <span class="line-text">${esc(line.text)}</span>
+          <textarea class="line-text-input" rows="1" data-index="${i}">${esc(line.text)}</textarea>
           <button class="line-btn line-btn-a${activeA}" data-index="${i}" data-role="ME">A</button>
           <button class="line-btn line-btn-b${activeB}" data-index="${i}" data-role="THEM">B</button>
         </div>`;
@@ -564,11 +548,18 @@ function renderLineList(scriptId) {
     });
   });
 
-  lineList.querySelectorAll('.line-row').forEach(row => {
-    row.addEventListener('click', function(e) {
-      if (e.target.closest('.line-btn')) return;
-      openLineEditModal(script, +row.dataset.index, scriptId);
+  lineList.querySelectorAll('.line-text-input').forEach(ta => {
+    autoResizeTextarea(ta);
+    ta.addEventListener('input', function() { autoResizeTextarea(ta); });
+    ta.addEventListener('change', function() {
+      var text = ta.value.trim();
+      if (!text) { ta.value = script.lines[+ta.dataset.index].text; return; }
+      script.lines[+ta.dataset.index].text = text;
+      saveScripts();
     });
+  });
+
+  lineList.querySelectorAll('.line-row').forEach(row => {
     row.addEventListener('contextmenu', function(e) { e.preventDefault(); });
   });
 }
