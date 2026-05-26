@@ -155,10 +155,10 @@ function showConfirm(title, msg) {
 
 function offerSaveReceivedScript(script) {
   const existing = state.scripts.find(s => s.name === script.name);
-  const title = existing ? 'Overwrite saved script?' : 'Save script locally?';
+  const title = existing ? 'Update your saved copy?' : 'Script ready!';
   const body = existing
-    ? `"${script.name}" already exists on this device. Replace it with the received version?`
-    : `Save "${script.name}" to this device for offline use?`;
+    ? `You already have "${script.name}" saved. The actor's version will be used for this audition — update your saved copy to match?`
+    : `The script from the actor's device is ready to use. Save a copy to this device for future offline practice?`;
 
   const overlay = document.createElement('div');
   overlay.className = 'confirm-overlay';
@@ -167,8 +167,8 @@ function offerSaveReceivedScript(script) {
       <h3>${title}</h3>
       <p>${body}</p>
       <div class="confirm-actions">
-        <button class="confirm-cancel">Not now</button>
-        <button class="confirm-ok save-ok">${existing ? 'Overwrite' : 'Save'}</button>
+        <button class="confirm-cancel">${existing ? 'Keep mine' : 'Not now'}</button>
+        <button class="confirm-ok save-ok">${existing ? 'Update' : 'Save copy'}</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
