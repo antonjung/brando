@@ -644,6 +644,7 @@ function enterAuditionMode() {
   showView('view-audition');
   document.getElementById('audition-blank').style.opacity = '1';
   document.getElementById('audition-text-container').classList.add('hidden');
+  if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2 });
 }
 
 function showMeText(text) {
