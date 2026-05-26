@@ -1,4 +1,4 @@
-const VERSION = '2.0.25';
+const VERSION = '2.0.26';
 const CACHE = `brando-v${VERSION}`;
 const ASSETS = [
   'css/styles.css',
