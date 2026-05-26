@@ -31,6 +31,11 @@
 
   <!-- ── Home ──────────────────────────────── -->
   <div id="view-home" class="view">
+    <div class="home-conn-bar">
+      <button id="btn-home-scan" class="home-conn-btn">
+        <i data-feather="camera"></i><span id="home-conn-label">Scan</span>
+      </button>
+    </div>
     <div id="script-list" class="script-list hidden"></div>
     <div id="empty-state" class="empty-state hidden">
       <div class="empty-icon"><i data-feather="film"></i></div>
@@ -135,6 +140,11 @@
 
   <!-- ── Reader ────────────────────────────── -->
   <div id="view-reader" class="view hidden">
+    <div class="reader-toolbar">
+      <button id="btn-hide-actor" class="reader-tool-btn" title="Hide actor lines">
+        <i data-feather="eye-off"></i><span>Hide Actor</span>
+      </button>
+    </div>
     <div id="reader-sections" class="reader-sections"></div>
   </div>
 

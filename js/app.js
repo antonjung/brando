@@ -683,6 +683,18 @@ function startReaderMode(script, conn) {
   const meLabel   = scriptMeLabel(script);
   const themLabel = scriptThemLabel(script);
 
+  // Reset hide-actor toggle
+  const sections = document.getElementById('reader-sections');
+  const hideBtn = document.getElementById('btn-hide-actor');
+  if (sections) sections.classList.remove('hide-actor');
+  if (hideBtn) {
+    hideBtn.classList.remove('active');
+    const sp = hideBtn.querySelector('span');
+    const ie = hideBtn.querySelector('i');
+    if (sp) sp.textContent = 'Hide Actor';
+    if (ie) ie.setAttribute('data-feather', 'eye-off');
+  }
+
   showView('view-reader');
   document.getElementById('main-title').textContent = script.name;
   const statusEl = document.getElementById('reader-status');
@@ -733,12 +745,26 @@ function startReaderMode(script, conn) {
 
 function updateScanBtn() {
   var connected = state.readerConn && state.readerConn.open;
-  var btn = document.getElementById('btn-footer-scan');
-  if (!btn) return;
-  var iEl = btn.querySelector('i');
-  var span = btn.querySelector('span');
-  if (iEl) iEl.setAttribute('data-feather', connected ? 'play-circle' : 'camera');
-  if (span) span.textContent = connected ? 'Run' : 'Scan';
+  var icon = connected ? 'play-circle' : 'camera';
+  var label = connected ? 'Run' : 'Scan';
+
+  var footerBtn = document.getElementById('btn-footer-scan');
+  if (footerBtn) {
+    var iEl = footerBtn.querySelector('i');
+    var span = footerBtn.querySelector('span');
+    if (iEl) iEl.setAttribute('data-feather', icon);
+    if (span) span.textContent = label;
+  }
+
+  var homeBtn = document.getElementById('btn-home-scan');
+  if (homeBtn) {
+    var hEl = homeBtn.querySelector('i');
+    var hSpan = document.getElementById('home-conn-label');
+    if (hEl) hEl.setAttribute('data-feather', icon);
+    if (hSpan) hSpan.textContent = label;
+    homeBtn.classList.toggle('connected', connected);
+  }
+
   if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2 });
 }
 
@@ -1010,13 +1036,27 @@ function bindEvents() {
     const script = state.scripts.find(s => s.id === state.currentScriptId);
     if (script) startReaderMode(script, null);
   });
-  document.getElementById('btn-footer-scan').addEventListener('click', function() {
+  function doScanOrRun() {
     if (state.readerConn && state.readerConn.open) {
       if (state.readerScript) startReaderMode(state.readerScript, state.readerConn);
       else showView('view-reader');
     } else {
       startScanMode();
     }
+  }
+  document.getElementById('btn-footer-scan').addEventListener('click', doScanOrRun);
+  document.getElementById('btn-home-scan').addEventListener('click', doScanOrRun);
+
+  document.getElementById('btn-hide-actor').addEventListener('click', function() {
+    var sections = document.getElementById('reader-sections');
+    var btn = this;
+    var hiding = sections.classList.toggle('hide-actor');
+    btn.classList.toggle('active', hiding);
+    var span = btn.querySelector('span');
+    var iEl = btn.querySelector('i');
+    if (span) span.textContent = hiding ? 'Show Actor' : 'Hide Actor';
+    if (iEl) iEl.setAttribute('data-feather', hiding ? 'eye' : 'eye-off');
+    if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2 });
   });
   document.getElementById('menu-disconnect').addEventListener('click', function() {
     closeAllPanels();

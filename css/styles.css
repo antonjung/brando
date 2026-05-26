@@ -1316,6 +1316,79 @@ html, body {
 .footer-btn.footer-me:not(:disabled)   { color: var(--me-color); }
 .footer-btn.footer-them:not(:disabled) { color: var(--them-color); }
 
+/* ── Home connection bar ─────────────────── */
+.home-conn-bar {
+  flex-shrink: 0;
+  padding: 10px 16px 6px;
+  display: flex;
+}
+
+.home-conn-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.home-conn-btn svg { width: 20px; height: 20px; }
+
+.home-conn-btn.connected {
+  background: color-mix(in srgb, var(--them-color) 12%, var(--surface));
+  border-color: var(--them-color);
+  color: var(--them-color);
+}
+
+/* ── Reader toolbar ──────────────────────── */
+.reader-toolbar {
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.reader-tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.reader-tool-btn svg { width: 16px; height: 16px; }
+
+.reader-tool-btn.active {
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface2));
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* When actor lines are hidden */
+.reader-sections.hide-actor .reader-section[data-role="ME"] .reader-section-text {
+  filter: blur(6px);
+  user-select: none;
+}
+
 /* ── Script Card Selected State ──────────── */
 .script-card.selected {
   border-color: var(--accent);
