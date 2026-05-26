@@ -669,67 +669,6 @@ html, body {
   position: relative;
 }
 
-/* Video panel — bottom strip, collapsible */
-.audition-video-panel {
-  flex-shrink: 0;
-  background: #111;
-  border-top: 1px solid #333;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
-  max-height: 300px;
-}
-
-.audition-video-panel.collapsed {
-  max-height: 0;
-  border-top: none;
-}
-
-.self-video {
-  width: 100%;
-  display: block;
-  max-height: 220px;
-  object-fit: cover;
-  transform: scaleX(-1);
-}
-
-.video-controls {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  padding: 8px;
-  background: rgba(0,0,0,0.85);
-}
-
-.video-ctrl-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255,255,255,0.15);
-  color: #fff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-}
-
-.video-ctrl-btn:active { background: rgba(255,255,255,0.3); }
-.video-ctrl-btn svg { width: 18px; height: 18px; display: block; }
-
-#btn-video-record svg { color: #ff4444; }
-#btn-video-stop svg { color: #ff4444; }
-
-/* keep old .exit-btn name working if referenced elsewhere */
-.exit-btn { display: none; }
-
-@keyframes rec-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
-#btn-video-stop { animation: rec-pulse 1s infinite; }
-
 
 /* ── Scan Mode ────────────────────────────── */
 .scan-container {

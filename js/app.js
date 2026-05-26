@@ -909,87 +909,6 @@ function openNoteModal(existing) {
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
 
-// ── Self-video & Recording ────────────────────────────────────────────────────
-var _selfStream = null;
-var _mediaRecorder = null;
-var _recordedChunks = [];
-
-async function startSelfVideo() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    toast('Camera not available on this device');
-    return;
-  }
-  try {
-    _selfStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
-    var vid = document.getElementById('self-video');
-    vid.srcObject = _selfStream;
-    vid.play().catch(function() {});
-    document.getElementById('audition-video-panel').classList.remove('collapsed');
-    var vBtn = document.getElementById('btn-audition-video');
-    if (vBtn) vBtn.classList.add('active');
-  } catch (err) {
-    toast('Camera access denied');
-  }
-}
-
-function stopSelfVideo() {
-  stopRecording();
-  if (_selfStream) { _selfStream.getTracks().forEach(function(t) { t.stop(); }); _selfStream = null; }
-  var panel = document.getElementById('audition-video-panel');
-  if (panel) panel.classList.add('collapsed');
-  var toggleBtn = document.getElementById('btn-audition-video');
-  if (toggleBtn) toggleBtn.classList.remove('active');
-}
-
-function toggleSelfVideo() {
-  if (_selfStream) stopSelfVideo(); else startSelfVideo();
-}
-
-function startRecording() {
-  if (!_selfStream) return;
-  if (!window.MediaRecorder) { toast('Recording not supported on this device'); return; }
-  _recordedChunks = [];
-  var mimeType = MediaRecorder.isTypeSupported('video/mp4') ? 'video/mp4'
-               : MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9'
-               : MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : '';
-  try {
-    _mediaRecorder = new MediaRecorder(_selfStream, mimeType ? { mimeType: mimeType } : {});
-  } catch (e) {
-    _mediaRecorder = new MediaRecorder(_selfStream);
-    mimeType = '';
-  }
-  _mediaRecorder.ondataavailable = function(e) { if (e.data && e.data.size > 0) _recordedChunks.push(e.data); };
-  _mediaRecorder.onstop = function() {
-    var type = (_mediaRecorder && _mediaRecorder.mimeType) || mimeType || 'video/webm';
-    var blob = new Blob(_recordedChunks, { type: type });
-    var ext = type.indexOf('mp4') !== -1 ? 'mp4' : 'webm';
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'audition-' + Date.now() + '.' + ext;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
-    toast('Recording saved');
-  };
-  _mediaRecorder.start();
-  var recBtn = document.getElementById('btn-video-record');
-  var stopBtn = document.getElementById('btn-video-stop');
-  if (recBtn) { recBtn.classList.add('hidden'); }
-  if (stopBtn) { stopBtn.classList.remove('hidden'); }
-}
-
-function stopRecording() {
-  if (_mediaRecorder && _mediaRecorder.state !== 'inactive') { _mediaRecorder.stop(); }
-  _mediaRecorder = null;
-  _recordedChunks = [];
-  var recBtn = document.getElementById('btn-video-record');
-  var stopBtn = document.getElementById('btn-video-stop');
-  if (recBtn) recBtn.classList.remove('hidden');
-  if (stopBtn) stopBtn.classList.add('hidden');
-}
-
 // ── Service Worker & Updates ──────────────────────────────────────────────────
 async function registerSW() {
   if (!('serviceWorker' in navigator)) return;
@@ -1065,7 +984,7 @@ function bindEvents() {
 
   // Footer nav
   document.getElementById('btn-footer-home').addEventListener('click', () => {
-    stopScrolling(); stopSelfVideo();
+    stopScrolling();
     if (state.conn) { try { state.conn.close(); } catch {} state.conn = null; }
     // Only destroy peer if not maintaining a live reader connection
     if (!state.readerConn || !state.readerConn.open) {
@@ -1151,12 +1070,9 @@ function bindEvents() {
   // QR / Audition
   document.getElementById('btn-enter-audition').addEventListener('click', enterAuditionMode);
   document.getElementById('btn-exit-audition').addEventListener('click', () => {
-    stopScrolling(); clearAudition(); stopSelfVideo();
+    stopScrolling(); clearAudition();
     showView('view-home'); renderHome();
   });
-  document.getElementById('btn-audition-video').addEventListener('click', toggleSelfVideo);
-  document.getElementById('btn-video-record').addEventListener('click', startRecording);
-  document.getElementById('btn-video-stop').addEventListener('click', stopRecording);
 
   // Notes
   document.getElementById('btn-add-note').addEventListener('click', () => openNoteModal(null));
