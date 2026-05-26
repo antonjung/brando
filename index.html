@@ -54,6 +54,18 @@
     </div>
   </div>
 
+  <!-- ── Script Editor (manual create / edit) -->
+  <div id="view-script-editor" class="view hidden">
+    <div class="se-header">
+      <input type="text" id="se-name" placeholder="Script name…" maxlength="60" autocomplete="off">
+    </div>
+    <div id="se-lines" class="se-lines"></div>
+    <div class="se-footer">
+      <button class="btn-secondary" id="btn-se-add">+ Add Line</button>
+      <button class="btn-primary" id="btn-se-save">Save</button>
+    </div>
+  </div>
+
   <!-- ── Editor ────────────────────────────── -->
   <div id="view-editor" class="view hidden">
     <div class="line-list-wrap">
@@ -171,6 +183,7 @@
   </div>
   <ul class="menu-list">
     <li><button id="menu-import">Import PDF</button></li>
+    <li><button id="menu-create-script">Create Script</button></li>
     <li><button id="menu-notes">Notes</button></li>
     <li><button id="menu-how-it-works">How it works</button></li>
     <li class="menu-divider"></li>
