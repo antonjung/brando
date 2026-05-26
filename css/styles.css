@@ -1316,39 +1316,6 @@ html, body {
 .footer-btn.footer-me:not(:disabled)   { color: var(--me-color); }
 .footer-btn.footer-them:not(:disabled) { color: var(--them-color); }
 
-/* ── Home connection bar ─────────────────── */
-.home-conn-bar {
-  flex-shrink: 0;
-  padding: 10px 16px 6px;
-  display: flex;
-}
-
-.home-conn-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 13px 20px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-muted);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-
-.home-conn-btn svg { width: 20px; height: 20px; }
-
-.home-conn-btn.connected {
-  background: color-mix(in srgb, var(--them-color) 12%, var(--surface));
-  border-color: var(--them-color);
-  color: var(--them-color);
-}
 
 /* ── Actor hide toggle (top-right of reader view) */
 .actor-toggle {
@@ -1395,9 +1362,20 @@ html, body {
 }
 
 /* When actor lines are hidden */
-.reader-sections.hide-actor .reader-section[data-role="ME"] .reader-section-text {
-  filter: blur(6px);
+.reader-sections.hide-actor .reader-section[data-role="ME"]:not(.revealed) .reader-section-text {
+  filter: blur(7px);
   user-select: none;
+  transition: filter 0.2s;
+}
+
+.reader-sections.hide-actor .reader-section[data-role="ME"]:not(.revealed) {
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.reader-sections.hide-actor .reader-section[data-role="ME"].revealed .reader-section-text {
+  filter: none;
+  transition: filter 0.2s;
 }
 
 /* ── Script Card Selected State ──────────── */

@@ -725,6 +725,15 @@ function startReaderMode(script, conn) {
 
   container.querySelectorAll('.reader-section').forEach(el => {
     el.addEventListener('click', () => {
+      // If hide-actor is on and this ME line is not yet revealed, reveal it first
+      if (el.dataset.role === 'ME' && container.classList.contains('hide-actor') && !el.classList.contains('revealed')) {
+        el.classList.add('revealed');
+        return;
+      }
+      // Second click on a revealed line resets it back to hidden
+      if (el.dataset.role === 'ME' && container.classList.contains('hide-actor') && el.classList.contains('revealed')) {
+        el.classList.remove('revealed');
+      }
       container.querySelectorAll('.reader-section').forEach(e => e.classList.remove('active'));
       el.classList.add('active');
       if (navigator.vibrate) navigator.vibrate(40);
@@ -737,28 +746,22 @@ function startReaderMode(script, conn) {
   });
 }
 
+function setFeatherIcon(parent, iconName) {
+  var el = parent.querySelector('svg') || parent.querySelector('i');
+  if (!el) return;
+  var i = document.createElement('i');
+  i.setAttribute('data-feather', iconName);
+  el.parentNode.replaceChild(i, el);
+}
+
 function updateScanBtn() {
   var connected = state.readerConn && state.readerConn.open;
-  var icon = connected ? 'play-circle' : 'camera';
-  var label = connected ? 'Run' : 'Scan';
-
   var footerBtn = document.getElementById('btn-footer-scan');
   if (footerBtn) {
-    var iEl = footerBtn.querySelector('i');
+    setFeatherIcon(footerBtn, connected ? 'play-circle' : 'camera');
     var span = footerBtn.querySelector('span');
-    if (iEl) iEl.setAttribute('data-feather', icon);
-    if (span) span.textContent = label;
+    if (span) span.textContent = connected ? 'Run' : 'Scan';
   }
-
-  var homeBtn = document.getElementById('btn-home-scan');
-  if (homeBtn) {
-    var hEl = homeBtn.querySelector('i');
-    var hSpan = document.getElementById('home-conn-label');
-    if (hEl) hEl.setAttribute('data-feather', icon);
-    if (hSpan) hSpan.textContent = label;
-    homeBtn.classList.toggle('connected', connected);
-  }
-
   if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2 });
 }
 
@@ -1039,11 +1042,14 @@ function bindEvents() {
     }
   }
   document.getElementById('btn-footer-scan').addEventListener('click', doScanOrRun);
-  document.getElementById('btn-home-scan').addEventListener('click', doScanOrRun);
 
   document.getElementById('toggle-hide-actor').addEventListener('change', function() {
     var sections = document.getElementById('reader-sections');
-    if (sections) sections.classList.toggle('hide-actor', this.checked);
+    if (!sections) return;
+    sections.classList.toggle('hide-actor', this.checked);
+    if (!this.checked) {
+      sections.querySelectorAll('.revealed').forEach(function(el) { el.classList.remove('revealed'); });
+    }
   });
   document.getElementById('menu-disconnect').addEventListener('click', function() {
     closeAllPanels();
