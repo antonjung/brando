@@ -250,34 +250,91 @@
       <button class="icon-btn" id="btn-hiw-close"><i data-feather="x"></i></button>
     </div>
     <div class="hiw-body">
+
+      <section class="hiw-section">
+        <h3><i data-feather="file-plus"></i> Adding scripts</h3>
+        <ul>
+          <li><strong>Import PDF</strong> — tap Import PDF from the menu or home screen. The script appears in your list ready to edit.</li>
+          <li><strong>Create manually</strong> — tap Create Script, enter a name, then paste or type lines (one line per paragraph). Tap <em>Next — assign roles</em> to continue.</li>
+        </ul>
+      </section>
+
+      <section class="hiw-section">
+        <h3><i data-feather="edit-2"></i> Editing a script</h3>
+        <ul>
+          <li>Select a script on the home screen, then tap <strong>Edit</strong> in the footer.</li>
+          <li>Each line shows two buttons — <strong>A</strong> (Actor) and <strong>B</strong> (Reader). Tap to assign; tap again to unassign.</li>
+          <li>Tap anywhere on a line (not the buttons) to edit the text.</li>
+          <li>Tap <strong>Done</strong> when finished — the script is marked <em>Ready</em>.</li>
+        </ul>
+      </section>
+
+      <section class="hiw-section">
+        <h3><i data-feather="tag"></i> Custom labels</h3>
+        <ul>
+          <li>Select a script on the home screen to reveal its own <strong>Actor</strong> and <strong>Reader</strong> label fields.</li>
+          <li>Editing these overrides the global defaults for that script only.</li>
+          <li>Global defaults live in <strong>Settings</strong> (gear icon, top right).</li>
+        </ul>
+      </section>
+
       <section class="hiw-section">
         <h3><i data-feather="smartphone"></i> Two devices, two roles</h3>
         <table class="hiw-table">
-          <tr><th>Device A</th><td>The actor — tap <strong>ME</strong></td></tr>
-          <tr><th>Device B</th><td>The reader — scan the QR code</td></tr>
+          <tr><th>Device A</th><td>The actor — tap the <strong>Actor</strong> footer button</td></tr>
+          <tr><th>Device B</th><td>The reader — tap the <strong>Read</strong> footer button</td></tr>
         </table>
       </section>
+
       <section class="hiw-section">
         <h3><i data-feather="link"></i> Connecting</h3>
         <ol>
-          <li>On Device A, select a script and tap <strong>ME</strong>.</li>
-          <li>A QR code appears — have Device B scan it.</li>
-          <li>Device B opens the app and connects automatically.</li>
-          <li>Device A shows <em>"Reader connected!"</em> — tap <strong>Enter Audition Mode</strong>.</li>
+          <li>On Device A, select a <em>Ready</em> script and tap <strong>Actor</strong>.</li>
+          <li>A QR code appears. On Device B tap <strong>Read</strong> then scan it.</li>
+          <li>Device B connects and receives the script automatically.</li>
+          <li>Device A enters audition mode; Device B sees all sections listed.</li>
         </ol>
       </section>
+
       <section class="hiw-section">
         <h3><i data-feather="play"></i> Running the audition</h3>
         <ul>
-          <li>Device B sees all script sections listed.</li>
-          <li>Tap a <strong>THEM</strong> section → Device A's screen clears.</li>
-          <li>Tap a <strong>ME</strong> section → Device A shows the lines and they scroll at the set speed.</li>
+          <li>On Device B, tap a <strong>Reader</strong> section → Device A's screen clears.</li>
+          <li>Tap an <strong>Actor</strong> section → Device A shows those lines and they auto-scroll.</li>
+          <li>Adjust scroll speed and text sizes in <strong>Settings</strong>.</li>
         </ul>
       </section>
+
       <section class="hiw-section">
         <h3><i data-feather="user"></i> Solo / testing</h3>
-        <p>Tap <strong>THEM</strong> on any device to enter reader mode locally — no second device needed.</p>
+        <p>Tap <strong>Reader</strong> in the footer on any device to browse sections locally — no second device needed.</p>
       </section>
+
+      <section class="hiw-section">
+        <h3><i data-feather="book-open"></i> Read button &amp; staying connected</h3>
+        <ul>
+          <li>Once connected, tapping <strong>Read</strong> on Device B returns straight to the script — no need to scan again.</li>
+          <li>The wifi icon in the header shows connection status (green = connected).</li>
+          <li>To drop the connection open the menu and tap <strong>Disconnect Reader</strong>.</li>
+        </ul>
+      </section>
+
+      <section class="hiw-section">
+        <h3><i data-feather="file-text"></i> Notes</h3>
+        <p>Open <strong>Notes</strong> from the menu to keep rehearsal notes. Tap <strong>+</strong> to add one; use the edit and delete icons on each note.</p>
+      </section>
+
+      <section class="hiw-section">
+        <h3><i data-feather="settings"></i> Settings</h3>
+        <table class="hiw-table">
+          <tr><th>Scroll Speed</th><td>How fast Actor lines auto-scroll</td></tr>
+          <tr><th>Actor Text Size</th><td>Font size on the Actor's screen</td></tr>
+          <tr><th>Reader Text Size</th><td>Font size on the Reader's screen</td></tr>
+          <tr><th>Theme</th><td>Dark, Light, or Dyslexia-friendly</td></tr>
+          <tr><th>Actor / Reader Label</th><td>Rename the roles globally</td></tr>
+        </table>
+      </section>
+
     </div>
   </div>
 </div>

@@ -1,1 +1,1 @@
-﻿window.APP_VERSION = '1.0.61';
+﻿window.APP_VERSION = '1.0.62';
