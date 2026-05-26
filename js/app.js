@@ -153,6 +153,40 @@ function showConfirm(title, msg) {
   });
 }
 
+function offerSaveReceivedScript(script) {
+  const existing = state.scripts.find(s => s.name === script.name);
+  const title = existing ? 'Overwrite saved script?' : 'Save script locally?';
+  const body = existing
+    ? `"${script.name}" already exists on this device. Replace it with the received version?`
+    : `Save "${script.name}" to this device for offline use?`;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.innerHTML = `
+    <div class="confirm-dialog">
+      <h3>${title}</h3>
+      <p>${body}</p>
+      <div class="confirm-actions">
+        <button class="confirm-cancel">Not now</button>
+        <button class="confirm-ok save-ok">${existing ? 'Overwrite' : 'Save'}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('.confirm-cancel').addEventListener('click', () => overlay.remove());
+  overlay.querySelector('.save-ok').addEventListener('click', () => {
+    overlay.remove();
+    if (existing) {
+      Object.assign(existing, script, { id: existing.id });
+    } else {
+      const copy = Object.assign({}, script, { id: uid(), createdAt: Date.now() });
+      state.scripts.unshift(copy);
+    }
+    saveScripts();
+    toast(`"${script.name}" saved`);
+  });
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
 // ── Theme ────────────────────────────────────────────────────────────────────
 function loadOpenDyslexic() {
   if (document.getElementById('opendyslexic-css')) return;
@@ -845,6 +879,7 @@ function handleIncomingPeer(peerId) {
         if (msg.themLabel) s.themLabel = msg.themLabel;
         state.readerScript = s;
         startReaderMode(s, conn);
+        offerSaveReceivedScript(s);
       }
     });
     conn.on('close', () => {

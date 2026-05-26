@@ -1338,6 +1338,7 @@ html, body {
 .confirm-actions button { flex: 1; padding: 12px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; cursor: pointer; border: none; }
 .confirm-cancel { background: var(--surface2); color: var(--text); }
 .confirm-ok { background: var(--danger); color: white; }
+.confirm-ok.save-ok { background: var(--accent); color: #000; }
 
 /* ── Feather icon sizing ──────────────────── */
 .icon-btn svg         { width: 22px; height: 22px; display: block; }
