@@ -756,6 +756,17 @@ function startReaderMode(script, conn) {
   });
 }
 
+function updateScanBtn() {
+  var connected = state.readerConn && state.readerConn.open;
+  var btn = document.getElementById('btn-footer-scan');
+  if (!btn) return;
+  var iEl = btn.querySelector('i');
+  var span = btn.querySelector('span');
+  if (iEl) iEl.setAttribute('data-feather', connected ? 'play-circle' : 'camera');
+  if (span) span.textContent = connected ? 'Run' : 'Scan';
+  if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2 });
+}
+
 // ── QR Scanner ────────────────────────────────────────────────────────────────
 function stopScan() {
   if (_scanRaf) { cancelAnimationFrame(_scanRaf); _scanRaf = null; }
@@ -839,6 +850,7 @@ function handleIncomingPeer(peerId) {
       rs.classList.remove('disconnected');
       rs.classList.add('connected');
       rs.innerHTML = icon('wifi', 18);
+      updateScanBtn();
     });
     conn.on('data', msg => {
       if (msg.type === 'script') {
@@ -855,6 +867,7 @@ function handleIncomingPeer(peerId) {
       rs.classList.add('disconnected');
       rs.innerHTML = icon('wifi-off', 18);
       state.readerConn = null;
+      updateScanBtn();
     });
     conn.on('error', err => toast('Connection error: ' + err));
   });
@@ -1119,6 +1132,7 @@ function bindEvents() {
     rs.classList.add('hidden');
     rs.classList.remove('connected', 'disconnected');
     toast('Reader disconnected');
+    updateScanBtn();
     showView('view-home'); renderHome();
   });
   document.getElementById('scan-manual-connect').addEventListener('click', () => {
@@ -1215,6 +1229,7 @@ function init() {
   checkVersionMismatch();
 
   if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2 });
+  updateScanBtn();
 
   const vText = `v${APP_VERSION}`;
   const vEl = document.getElementById('app-version');

@@ -598,6 +598,7 @@ html, body {
 /* ── Audition Mode ────────────────────────── */
 #view-audition {
   background: #000;
+  position: relative;
 }
 
 .audition-blank {
