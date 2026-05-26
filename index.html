@@ -140,11 +140,10 @@
 
   <!-- ── Reader ────────────────────────────── -->
   <div id="view-reader" class="view hidden">
-    <div class="reader-toolbar">
-      <button id="btn-hide-actor" class="reader-tool-btn" title="Hide actor lines">
-        <i data-feather="eye-off"></i><span>Hide Actor</span>
-      </button>
-    </div>
+    <label class="actor-toggle" title="Hide actor lines">
+      <input type="checkbox" id="toggle-hide-actor">
+      <span class="actor-toggle-track"><span class="actor-toggle-thumb"></span></span>
+    </label>
     <div id="reader-sections" class="reader-sections"></div>
   </div>
 

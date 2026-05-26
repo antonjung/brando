@@ -1350,37 +1350,48 @@ html, body {
   color: var(--them-color);
 }
 
-/* ── Reader toolbar ──────────────────────── */
-.reader-toolbar {
-  flex-shrink: 0;
-  display: flex;
-  gap: 8px;
-  padding: 8px 12px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-}
-
-.reader-tool-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--surface2);
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 600;
+/* ── Actor hide toggle (top-right of reader view) */
+.actor-toggle {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 10;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.reader-tool-btn svg { width: 16px; height: 16px; }
+.actor-toggle input { display: none; }
 
-.reader-tool-btn.active {
-  background: color-mix(in srgb, var(--accent) 15%, var(--surface2));
+.actor-toggle-track {
+  display: block;
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  position: relative;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.actor-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.actor-toggle input:checked + .actor-toggle-track {
+  background: var(--accent);
   border-color: var(--accent);
-  color: var(--accent);
+}
+
+.actor-toggle input:checked + .actor-toggle-track .actor-toggle-thumb {
+  transform: translateX(18px);
+  background: #fff;
 }
 
 /* When actor lines are hidden */

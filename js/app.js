@@ -685,15 +685,9 @@ function startReaderMode(script, conn) {
 
   // Reset hide-actor toggle
   const sections = document.getElementById('reader-sections');
-  const hideBtn = document.getElementById('btn-hide-actor');
+  const hideChk = document.getElementById('toggle-hide-actor');
   if (sections) sections.classList.remove('hide-actor');
-  if (hideBtn) {
-    hideBtn.classList.remove('active');
-    const sp = hideBtn.querySelector('span');
-    const ie = hideBtn.querySelector('i');
-    if (sp) sp.textContent = 'Hide Actor';
-    if (ie) ie.setAttribute('data-feather', 'eye-off');
-  }
+  if (hideChk) hideChk.checked = false;
 
   showView('view-reader');
   document.getElementById('main-title').textContent = script.name;
@@ -1047,16 +1041,9 @@ function bindEvents() {
   document.getElementById('btn-footer-scan').addEventListener('click', doScanOrRun);
   document.getElementById('btn-home-scan').addEventListener('click', doScanOrRun);
 
-  document.getElementById('btn-hide-actor').addEventListener('click', function() {
+  document.getElementById('toggle-hide-actor').addEventListener('change', function() {
     var sections = document.getElementById('reader-sections');
-    var btn = this;
-    var hiding = sections.classList.toggle('hide-actor');
-    btn.classList.toggle('active', hiding);
-    var span = btn.querySelector('span');
-    var iEl = btn.querySelector('i');
-    if (span) span.textContent = hiding ? 'Show Actor' : 'Hide Actor';
-    if (iEl) iEl.setAttribute('data-feather', hiding ? 'eye' : 'eye-off');
-    if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2 });
+    if (sections) sections.classList.toggle('hide-actor', this.checked);
   });
   document.getElementById('menu-disconnect').addEventListener('click', function() {
     closeAllPanels();
