@@ -1,4 +1,4 @@
-const VERSION = '2.0.29';
+const VERSION = '2.0.30';
 const CACHE = `brando-v${VERSION}`;
 const ASSETS = [
   'css/styles.css',
@@ -6,6 +6,7 @@ const ASSETS = [
   'manifest.json',
   'icons/icon.svg',
   'icons/brando.png',
+  'example.txt',
 ];
 
 // These are always fetched fresh from network (with cache fallback offline)

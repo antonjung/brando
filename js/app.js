@@ -1040,6 +1040,24 @@ function bindEvents() {
 
   document.getElementById('menu-import').addEventListener('click', () => { closeAllPanels(); triggerImport(); });
   document.getElementById('menu-create-script').addEventListener('click', () => { closeAllPanels(); openScriptEditor(null); });
+  document.getElementById('menu-example-script').addEventListener('click', () => {
+    closeAllPanels();
+    const existing = state.scripts.find(s => s.name === 'Example Script');
+    if (existing) { state.currentScriptId = existing.id; renderHome(); showView('view-home'); return; }
+    fetch('example.txt')
+      .then(r => r.text())
+      .then(text => {
+        const lines = text.split('\n').filter(l => l.trim()).map(l => ({ text: l.trimEnd(), role: null }));
+        const script = { id: uid(), name: 'Example Script', createdAt: Date.now(), lines, ready: false };
+        state.scripts.unshift(script);
+        saveScripts();
+        state.currentScriptId = script.id;
+        renderHome();
+        showView('view-home');
+        toast('Example Script loaded — assign roles in Edit');
+      })
+      .catch(() => toast('Could not load example script'));
+  });
   document.getElementById('btn-se-save').addEventListener('click', saveScriptEditor);
   document.getElementById('menu-notes').addEventListener('click', () => { closeAllPanels(); renderNotes(); showView('view-notes'); });
   document.getElementById('menu-how-it-works').addEventListener('click', () => {
