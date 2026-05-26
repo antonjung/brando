@@ -920,6 +920,34 @@ function openNoteModal(existing) {
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
 
+// ── Install prompt ────────────────────────────────────────────────────────────
+var _installPrompt = null;
+
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  _installPrompt = e;
+  var btn = document.getElementById('menu-install');
+  if (btn) btn.classList.remove('hidden');
+});
+
+window.addEventListener('appinstalled', function() {
+  _installPrompt = null;
+  var btn = document.getElementById('menu-install');
+  if (btn) btn.classList.add('hidden');
+});
+
+function isIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+}
+
+function showInstallModal() {
+  var modal = document.getElementById('install-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2 });
+  }
+}
+
 // ── Service Worker & Updates ──────────────────────────────────────────────────
 async function registerSW() {
   if (!('serviceWorker' in navigator)) return;
@@ -1110,6 +1138,26 @@ function bindEvents() {
     window.location.reload();
   });
   document.getElementById('menu-check-update').addEventListener('click', checkForUpdates);
+
+  document.getElementById('menu-install').addEventListener('click', function() {
+    closeAllPanels();
+    if (_installPrompt) {
+      _installPrompt.prompt();
+      _installPrompt.userChoice.then(function(result) {
+        if (result.outcome === 'accepted') _installPrompt = null;
+      });
+    } else if (isIOS()) {
+      showInstallModal();
+    }
+  });
+
+  document.getElementById('btn-install-close').addEventListener('click', function() {
+    document.getElementById('install-modal').classList.add('hidden');
+  });
+
+  document.getElementById('install-modal').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.add('hidden');
+  });
 }
 
 // ── Version check — nuclear reset if server has newer version ────────────────
@@ -1143,6 +1191,12 @@ function init() {
 
   if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2 });
   updateScanBtn();
+
+  // On iOS, always show the install button (no beforeinstallprompt API)
+  if (isIOS() && !navigator.standalone) {
+    var installBtn = document.getElementById('menu-install');
+    if (installBtn) installBtn.classList.remove('hidden');
+  }
 
   const vText = `v${APP_VERSION}`;
   const vEl = document.getElementById('app-version');

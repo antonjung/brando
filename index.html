@@ -201,6 +201,7 @@
     <li class="menu-divider"></li>
     <li><button id="menu-disconnect">Disconnect Reader</button></li>
     <li class="menu-divider"></li>
+    <li><button id="menu-install" class="hidden">Add to Home Screen</button></li>
     <li><button id="menu-check-update">Check for Update</button></li>
     <li><button id="menu-reload">Reload App</button></li>
   </ul>
@@ -236,6 +237,24 @@
         <button class="theme-btn" data-theme="light">Light</button>
         <button class="theme-btn" data-theme="dyslexia">Dyslexia</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Install Modal (iOS instructions) ────── -->
+<div id="install-modal" class="install-overlay hidden">
+  <div class="install-sheet">
+    <div class="install-header">
+      <h2>Add to Home Screen</h2>
+      <button class="icon-btn" id="btn-install-close"><i data-feather="x"></i></button>
+    </div>
+    <div class="install-body">
+      <p>To install Brando on your iPhone or iPad:</p>
+      <ol>
+        <li>Tap the <strong>Share</strong> button <span class="install-share-icon">&#x2B06;</span> at the bottom of Safari</li>
+        <li>Scroll down and tap <strong>Add to Home Screen</strong></li>
+        <li>Tap <strong>Add</strong> to confirm</li>
+      </ol>
     </div>
   </div>
 </div>
