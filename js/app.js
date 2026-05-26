@@ -895,7 +895,7 @@ async function startSelfVideo() {
     var vid = document.getElementById('self-video');
     vid.srcObject = _selfStream;
     vid.play().catch(function() {});
-    document.getElementById('audition-video-panel').classList.remove('hidden');
+    document.getElementById('audition-video-panel').classList.remove('collapsed');
     var vBtn = document.getElementById('btn-audition-video');
     if (vBtn) vBtn.classList.add('active');
   } catch (err) {
@@ -907,7 +907,7 @@ function stopSelfVideo() {
   stopRecording();
   if (_selfStream) { _selfStream.getTracks().forEach(function(t) { t.stop(); }); _selfStream = null; }
   var panel = document.getElementById('audition-video-panel');
-  if (panel) panel.classList.add('hidden');
+  if (panel) panel.classList.add('collapsed');
   var toggleBtn = document.getElementById('btn-audition-video');
   if (toggleBtn) toggleBtn.classList.remove('active');
 }

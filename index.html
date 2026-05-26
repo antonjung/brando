@@ -99,22 +99,26 @@
 
   <!-- ── Audition ───────────────────────────── -->
   <div id="view-audition" class="view hidden">
-    <div id="audition-blank" class="audition-blank">
-      <div class="audition-waiting">
-        <div class="waiting-dot"></div>
-        <div class="waiting-dot"></div>
-        <div class="waiting-dot"></div>
-      </div>
-    </div>
-    <div id="audition-text-container" class="audition-text-container hidden">
-      <div id="audition-text" class="audition-text"></div>
-    </div>
-    <!-- Controls bar rendered on top of blank/text overlays -->
+    <!-- Controls bar always at top -->
     <div class="audition-controls-bar">
       <button id="btn-audition-video" class="audition-ctrl"><i data-feather="video"></i></button>
       <button id="btn-exit-audition" class="audition-ctrl"><i data-feather="x"></i></button>
     </div>
-    <div id="audition-video-panel" class="audition-video-panel hidden">
+    <!-- Main stage: blank waiting / scrolling text -->
+    <div class="audition-stage">
+      <div id="audition-blank" class="audition-blank">
+        <div class="audition-waiting">
+          <div class="waiting-dot"></div>
+          <div class="waiting-dot"></div>
+          <div class="waiting-dot"></div>
+        </div>
+      </div>
+      <div id="audition-text-container" class="audition-text-container hidden">
+        <div id="audition-text" class="audition-text"></div>
+      </div>
+    </div>
+    <!-- Video panel at bottom, collapsible -->
+    <div id="audition-video-panel" class="audition-video-panel collapsed">
       <video id="self-video" class="self-video" playsinline autoplay muted></video>
       <div class="video-controls">
         <button id="btn-video-record" class="video-ctrl-btn" title="Record"><i data-feather="circle"></i></button>
