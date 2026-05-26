@@ -725,15 +725,20 @@ function startReaderMode(script, conn) {
 
   container.querySelectorAll('.reader-section').forEach(el => {
     el.addEventListener('click', () => {
-      // If hide-actor is on and this ME line is not yet revealed, reveal it first
-      if (el.dataset.role === 'ME' && container.classList.contains('hide-actor') && !el.classList.contains('revealed')) {
-        el.classList.add('revealed');
+      const practiceMode = container.classList.contains('hide-actor');
+
+      if (practiceMode) {
+        // Local practice only — toggle reveal on ME lines, no cues sent
+        if (el.dataset.role === 'ME') {
+          el.classList.toggle('revealed');
+        } else {
+          container.querySelectorAll('.reader-section').forEach(e => e.classList.remove('active'));
+          el.classList.add('active');
+          if (navigator.vibrate) navigator.vibrate(40);
+        }
         return;
       }
-      // Second click on a revealed line resets it back to hidden
-      if (el.dataset.role === 'ME' && container.classList.contains('hide-actor') && el.classList.contains('revealed')) {
-        el.classList.remove('revealed');
-      }
+
       container.querySelectorAll('.reader-section').forEach(e => e.classList.remove('active'));
       el.classList.add('active');
       if (navigator.vibrate) navigator.vibrate(40);
