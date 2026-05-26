@@ -971,6 +971,23 @@ function bindEvents() {
   document.getElementById('menu-check-update').addEventListener('click', checkForUpdates);
 }
 
+// ── Version check — nuclear reset if server has newer version ────────────────
+async function checkVersionMismatch() {
+  try {
+    const res = await fetch('version.js?_t=' + Date.now());
+    const text = await res.text();
+    const m = text.match(/'([^']+)'/);
+    if (!m || m[1] === APP_VERSION) return;
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+    window.location.reload();
+  } catch {}
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 function init() {
   loadScripts();
@@ -981,6 +998,7 @@ function init() {
   bindEvents();
   initSettingsListeners();
   registerSW();
+  checkVersionMismatch();
 
   if (typeof feather !== 'undefined') feather.replace({ 'stroke-width': 2 });
 
