@@ -665,9 +665,88 @@ html, body {
   cursor: pointer;
   z-index: 100;
   transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .exit-btn:active { background: rgba(255,255,255,0.25); }
+
+/* ── Audition video ───────────────────────── */
+.audition-video-toggle {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 36px;
+  height: 36px;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  border-radius: 50%;
+  color: rgba(255,255,255,0.35);
+  cursor: pointer;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.audition-video-toggle:active { background: rgba(255,255,255,0.25); }
+.audition-video-toggle.active { color: #fff; background: rgba(255,255,255,0.2); }
+.audition-video-toggle svg { width: 18px; height: 18px; display: block; }
+
+.audition-video-panel {
+  position: absolute;
+  bottom: 20px;
+  right: 16px;
+  width: min(140px, 32vw);
+  border-radius: 10px;
+  overflow: hidden;
+  z-index: 100;
+  background: #000;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+
+.self-video {
+  width: 100%;
+  display: block;
+  transform: scaleX(-1);
+}
+
+.video-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 7px 8px;
+  background: rgba(0,0,0,0.75);
+}
+
+.video-ctrl-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.video-ctrl-btn:active { background: rgba(255,255,255,0.3); }
+.video-ctrl-btn svg { width: 16px; height: 16px; display: block; }
+
+#btn-video-record svg { color: #ff4444; }
+#btn-video-stop svg { color: #ff4444; }
+
+@keyframes rec-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+#btn-video-stop { animation: rec-pulse 1s infinite; }
 
 
 /* ── Scan Mode ────────────────────────────── */

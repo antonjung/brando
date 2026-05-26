@@ -114,6 +114,14 @@
       <div id="audition-text" class="audition-text"></div>
     </div>
     <button id="btn-exit-audition" class="exit-btn"><i data-feather="x"></i></button>
+    <button id="btn-audition-video" class="audition-video-toggle"><i data-feather="video"></i></button>
+    <div id="audition-video-panel" class="audition-video-panel hidden">
+      <video id="self-video" class="self-video" playsinline autoplay muted></video>
+      <div class="video-controls">
+        <button id="btn-video-record" class="video-ctrl-btn" title="Record"><i data-feather="circle"></i></button>
+        <button id="btn-video-stop" class="video-ctrl-btn hidden" title="Stop &amp; save"><i data-feather="stop-circle"></i></button>
+      </div>
+    </div>
   </div>
 
   <!-- ── Scan ─────────────────────────────── -->
