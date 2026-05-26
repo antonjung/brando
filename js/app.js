@@ -584,13 +584,10 @@ function renderLineList(scriptId) {
   });
 
   lineList.querySelectorAll('.line-row').forEach(row => {
-    var lpTimer = null;
-    row.addEventListener('touchstart', function(e) {
+    row.addEventListener('click', function(e) {
       if (e.target.closest('.line-btn')) return;
-      lpTimer = setTimeout(function() { lpTimer = null; openLineEditModal(script, +row.dataset.index, scriptId); }, 500);
+      openLineEditModal(script, +row.dataset.index, scriptId);
     });
-    row.addEventListener('touchend', function() { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } });
-    row.addEventListener('touchmove', function() { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } });
     row.addEventListener('contextmenu', function(e) { e.preventDefault(); });
   });
 }

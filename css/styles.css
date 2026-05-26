@@ -480,6 +480,7 @@ html, body {
   border-bottom: 1px solid var(--border);
   -webkit-touch-callout: none;
   user-select: none;
+  cursor: pointer;
 }
 
 .line-btn {
