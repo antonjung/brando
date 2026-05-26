@@ -384,85 +384,27 @@ html, body {
   font-weight: 600;
 }
 
-.se-lines {
+.se-textarea {
   flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.se-line {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  background: var(--surface2);
-  border-radius: 8px;
-  padding: 8px;
-}
-
-.se-role-btns {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.se-role-btn {
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.se-role-btn.active[data-role="ME"]   { background: var(--me-bg); color: var(--me-color); border-color: var(--me-color); }
-.se-role-btn.active[data-role="THEM"] { background: var(--them-bg); color: var(--them-color); border-color: var(--them-color); }
-
-.se-text {
-  flex: 1;
-  padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.5;
-  resize: vertical;
-  font-family: inherit;
-}
-
-.se-delete-btn {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  width: 100%;
+  padding: 16px;
   border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 20px;
-  cursor: pointer;
-  border-radius: 4px;
-  line-height: 1;
-  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.7;
+  font-family: inherit;
+  resize: none;
+  outline: none;
 }
-
-.se-delete-btn:active { color: var(--danger); }
 
 .se-footer {
   flex-shrink: 0;
-  display: flex;
-  gap: 8px;
   padding: 12px;
   border-top: 1px solid var(--border);
 }
 
-.se-footer .btn-primary { flex: 1; }
+.se-footer .btn-primary { width: 100%; }
 
 /* ── Line Editor ──────────────────────────── */
 .line-list-wrap {

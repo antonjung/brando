@@ -244,100 +244,33 @@ function initSettingsListeners() {
 let _seScriptId = null;
 
 function openScriptEditor(scriptId) {
-  try {
-    _seScriptId = scriptId || null;
-    showView('view-script-editor');
-    const script = scriptId ? state.scripts.find(s => s.id === scriptId) : null;
-    const nameEl = document.getElementById('se-name');
-    if (!nameEl) { toast('Editor not available — try reloading'); return; }
-    nameEl.value = script ? script.name : '';
-    renderSeLines(script && script.lines ? script.lines : []);
-  } catch (err) {
-    toast('Error: ' + err.message);
-  }
-}
-
-function renderSeLines(lines) {
-  const { meLabel, themLabel } = state.settings;
-  const container = document.getElementById('se-lines');
-  container.innerHTML = lines.map((line, i) => `
-    <div class="se-line" data-index="${i}">
-      <div class="se-role-btns">
-        <button class="se-role-btn${line.role === 'ME' ? ' active' : ''}" data-role="ME">${esc(meLabel)}</button>
-        <button class="se-role-btn${line.role === 'THEM' ? ' active' : ''}" data-role="THEM">${esc(themLabel)}</button>
-      </div>
-      <textarea class="se-text" rows="2" placeholder="Line text…">${esc(line.text || '')}</textarea>
-      <button class="se-delete-btn" title="Delete line">×</button>
-    </div>`).join('');
-  bindSeLineEvents();
-}
-
-function bindSeLineEvents() {
-  const container = document.getElementById('se-lines');
-  container.querySelectorAll('.se-role-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      btn.closest('.se-line').querySelectorAll('.se-role-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    });
-  });
-  container.querySelectorAll('.se-delete-btn').forEach(btn => {
-    btn.addEventListener('click', () => btn.closest('.se-line').remove());
-  });
-}
-
-function addSeLine() {
-  const container = document.getElementById('se-lines');
-  const div = document.createElement('div');
-  div.className = 'se-line';
-  const { meLabel, themLabel } = state.settings;
-  div.innerHTML = `
-    <div class="se-role-btns">
-      <button class="se-role-btn" data-role="ME">${esc(meLabel)}</button>
-      <button class="se-role-btn" data-role="THEM">${esc(themLabel)}</button>
-    </div>
-    <textarea class="se-text" rows="2" placeholder="Line text…"></textarea>
-    <button class="se-delete-btn" title="Delete line">×</button>`;
-  container.appendChild(div);
-  bindSeLineEvents();
-  div.querySelector('.se-text').focus();
-  div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-function buildSections(lines) {
-  const sections = [];
-  let cur = null;
-  for (const line of lines) {
-    if (!line.role) continue;
-    if (!cur || cur.role !== line.role) { cur = { role: line.role, text: line.text }; sections.push(cur); }
-    else cur.text += '\n' + line.text;
-  }
-  return sections;
+  _seScriptId = scriptId || null;
+  showView('view-script-editor');
+  const script = scriptId ? state.scripts.find(s => s.id === scriptId) : null;
+  document.getElementById('se-name').value = script ? script.name : '';
+  document.getElementById('se-text').value = script && script.lines
+    ? script.lines.map(l => l.text).join('\n')
+    : '';
 }
 
 function saveScriptEditor() {
   const name = document.getElementById('se-name').value.trim();
   if (!name) { toast('Please enter a script name'); return; }
-  const lines = [];
-  document.querySelectorAll('#se-lines .se-line').forEach(row => {
-    const active = row.querySelector('.se-role-btn.active');
-    const text = row.querySelector('.se-text').value.trim();
-    if (text) lines.push({ role: active ? active.dataset.role : null, text });
-  });
-  if (!lines.length) { toast('Add at least one line'); return; }
-  const sections = buildSections(lines);
-  const complete = sections.some(s => s.role === 'ME') && sections.some(s => s.role === 'THEM');
+  const raw = document.getElementById('se-text').value;
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean).map(text => ({ text, role: null }));
+  if (!lines.length) { toast('Please enter some text'); return; }
   if (_seScriptId) {
     const script = state.scripts.find(s => s.id === _seScriptId);
-    Object.assign(script, { name, lines, sections, complete });
+    Object.assign(script, { name, lines, sections: null, complete: false });
   } else {
     const id = uid();
-    state.scripts.unshift({ id, name, lines, sections, manual: true, complete, createdAt: Date.now() });
+    state.scripts.unshift({ id, name, lines, sections: null, manual: true, complete: false, createdAt: Date.now() });
     state.currentScriptId = id;
   }
   saveScripts();
-  showView('view-home');
-  renderHome();
-  toast(`"${name}" saved`);
+  showView('view-editor');
+  document.getElementById('line-loading').classList.add('hidden');
+  renderLineList(state.currentScriptId);
 }
 
 function renderHome() {
@@ -975,7 +908,6 @@ function bindEvents() {
 
   document.getElementById('menu-import').addEventListener('click', () => { closeAllPanels(); triggerImport(); });
   document.getElementById('menu-create-script')?.addEventListener('click', () => { closeAllPanels(); openScriptEditor(null); });
-  document.getElementById('btn-se-add')?.addEventListener('click', addSeLine);
   document.getElementById('btn-se-save')?.addEventListener('click', saveScriptEditor);
   document.getElementById('menu-notes').addEventListener('click', () => { closeAllPanels(); renderNotes(); showView('view-notes'); });
   document.getElementById('menu-how-it-works').addEventListener('click', () => {
@@ -1001,7 +933,7 @@ function bindEvents() {
   document.getElementById('btn-footer-edit').addEventListener('click', async () => {
     if (!state.currentScriptId) return;
     const script = state.scripts.find(s => s.id === state.currentScriptId);
-    if (script && script.manual) { openScriptEditor(script.id); return; }
+    if (script && script.manual && !script.lines) { openScriptEditor(script.id); return; }
     showView('view-editor');
     await renderEditor(state.currentScriptId);
   });
