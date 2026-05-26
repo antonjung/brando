@@ -936,8 +936,8 @@ function bindEvents() {
   document.getElementById('btn-settings-close').addEventListener('click', closeAllPanels);
 
   document.getElementById('menu-import').addEventListener('click', () => { closeAllPanels(); triggerImport(); });
-  document.getElementById('menu-create-script')?.addEventListener('click', () => { closeAllPanels(); openScriptEditor(null); });
-  document.getElementById('btn-se-save')?.addEventListener('click', saveScriptEditor);
+  document.getElementById('menu-create-script').addEventListener('click', () => { closeAllPanels(); openScriptEditor(null); });
+  document.getElementById('btn-se-save').addEventListener('click', saveScriptEditor);
   document.getElementById('menu-notes').addEventListener('click', () => { closeAllPanels(); renderNotes(); showView('view-notes'); });
   document.getElementById('menu-how-it-works').addEventListener('click', () => {
     closeAllPanels();
@@ -948,7 +948,7 @@ function bindEvents() {
     document.getElementById('how-it-works-modal').classList.add('hidden');
   });
   document.getElementById('btn-import-empty').addEventListener('click', triggerImport);
-  document.getElementById('btn-create-empty')?.addEventListener('click', () => openScriptEditor(null));
+  document.getElementById('btn-create-empty').addEventListener('click', () => openScriptEditor(null));
   document.getElementById('pdf-input-global').addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
 
   document.getElementById('btn-import-quit').addEventListener('click', () => { showView('view-home'); renderHome(); });
