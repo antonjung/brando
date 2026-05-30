@@ -494,6 +494,7 @@ async function extractLines(pdfData) {
 
     for (const item of content.items) {
       if (!item.str.trim()) continue;
+      if (Math.abs(item.transform[1]) > 0.1) continue; // skip rotated text (watermarks)
       const [vx, vy] = viewport.convertToViewportPoint(item.transform[4], item.transform[5]);
       // Offset by page index so pages never merge
       allItems.push({ str: item.str.trim(), x: vx, y: pn * 10000 + vy });
