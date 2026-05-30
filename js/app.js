@@ -1058,6 +1058,13 @@ function bindEvents() {
       })
       .catch(() => toast('Could not load example script'));
   });
+  document.getElementById('menu-test-pdf').addEventListener('click', () => {
+    closeAllPanels();
+    fetch('test.pdf')
+      .then(r => r.blob())
+      .then(blob => handleFile(new File([blob], 'test.pdf', { type: 'application/pdf' })))
+      .catch(() => toast('Could not load test.pdf'));
+  });
   document.getElementById('btn-se-save').addEventListener('click', saveScriptEditor);
   document.getElementById('menu-notes').addEventListener('click', () => { closeAllPanels(); renderNotes(); showView('view-notes'); });
   document.getElementById('menu-how-it-works').addEventListener('click', () => {
