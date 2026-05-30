@@ -496,8 +496,10 @@ async function extractLines(pdfData) {
       if (!item.str.trim()) continue;
       if (Math.abs(item.transform[1]) > 0.1) continue; // skip rotated text (watermarks)
       const [vx, vy] = viewport.convertToViewportPoint(item.transform[4], item.transform[5]);
+      const [vxEnd] = viewport.convertToViewportPoint(item.transform[4] + item.width, item.transform[5]);
+      const fontH = Math.abs(item.transform[3]);
       // Offset by page index so pages never merge
-      allItems.push({ str: item.str.trim(), x: vx, y: pn * 10000 + vy });
+      allItems.push({ str: item.str, x: vx, y: pn * 10000 + vy, endX: Math.max(vx, vxEnd), fontH });
     }
   }
 
@@ -506,16 +508,20 @@ async function extractLines(pdfData) {
   const textLines = [];
   let lineItems = [];
   let prevY = null;
+  let prev = null;
 
   for (const item of allItems) {
     if (prevY !== null && Math.abs(item.y - prevY) > 4) {
-      if (lineItems.length) textLines.push({ text: lineItems.join(' '), role: null });
+      if (lineItems.length) textLines.push({ text: lineItems.join(''), role: null });
       lineItems = [];
+      prev = null;
     }
+    if (prev !== null && item.x - prev.endX > prev.fontH * 0.3) lineItems.push(' ');
     lineItems.push(item.str);
+    prev = item;
     prevY = item.y;
   }
-  if (lineItems.length) textLines.push({ text: lineItems.join(' '), role: null });
+  if (lineItems.length) textLines.push({ text: lineItems.join(''), role: null });
 
   return textLines;
 }
