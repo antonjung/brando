@@ -496,32 +496,47 @@ async function extractLines(pdfData) {
       if (!item.str.trim()) continue;
       if (Math.abs(item.transform[1]) > 0.1) continue; // skip rotated text (watermarks)
       const [vx, vy] = viewport.convertToViewportPoint(item.transform[4], item.transform[5]);
-      const [vxEnd] = viewport.convertToViewportPoint(item.transform[4] + item.width, item.transform[5]);
-      const fontH = Math.abs(item.transform[3]);
       // Offset by page index so pages never merge
-      allItems.push({ str: item.str, x: vx, y: pn * 10000 + vy, endX: Math.max(vx, vxEnd), fontH });
+      allItems.push({ str: item.str, x: vx, y: pn * 10000 + vy });
     }
   }
 
   allItems.sort((a, b) => a.y - b.y || a.x - b.x);
 
-  const textLines = [];
-  let lineItems = [];
-  let prevY = null;
-  let prev = null;
-
+  // Group items into lines by Y proximity
+  const lineGroups = [];
+  let cur = [], prevY = null;
   for (const item of allItems) {
-    if (prevY !== null && Math.abs(item.y - prevY) > 4) {
-      if (lineItems.length) textLines.push({ text: lineItems.join(''), role: null });
-      lineItems = [];
-      prev = null;
-    }
-    if (prev !== null && item.x - prev.endX > prev.fontH * 0.3) lineItems.push(' ');
-    lineItems.push(item.str);
-    prev = item;
+    if (prevY !== null && Math.abs(item.y - prevY) > 4) { if (cur.length) lineGroups.push(cur); cur = []; }
+    cur.push(item);
     prevY = item.y;
   }
-  if (lineItems.length) textLines.push({ text: lineItems.join(''), role: null });
+  if (cur.length) lineGroups.push(cur);
+
+  const textLines = [];
+  for (const line of lineGroups) {
+    if (line.length === 1) { textLines.push({ text: line[0].str, role: null }); continue; }
+
+    const avgLen = line.reduce((s, i) => s + i.str.length, 0) / line.length;
+
+    let text;
+    if (avgLen > 2) {
+      // Word-level items: any gap between items is a word space
+      text = line.map(i => i.str).join(' ');
+    } else {
+      // Char-level items: detect word boundaries from the distribution of X gaps
+      const gaps = line.slice(1).map((item, i) => item.x - line[i].x);
+      const sorted = gaps.filter(g => g > 0).sort((a, b) => a - b);
+      const typical = sorted.length ? sorted[Math.floor(sorted.length * 0.25)] : 1;
+      const threshold = typical * 1.6;
+      text = line[0].str;
+      for (let i = 1; i < line.length; i++) {
+        if (gaps[i - 1] > threshold) text += ' ';
+        text += line[i].str;
+      }
+    }
+    textLines.push({ text, role: null });
+  }
 
   return textLines;
 }
